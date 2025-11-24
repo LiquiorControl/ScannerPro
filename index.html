@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Bar Control - Análisis de Ventas</title>
+    <title>Master Bar Control Palmas - Sales Analysis</title>
     
-    <!-- 1. Estilos (Tailwind) -->
+    <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. React y ReactDOM -->
+    <!-- 2. React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
@@ -16,36 +16,38 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
-        /* Fondo oscuro general */
-        body { background-color: #0f172a; color: #e2e8f0; font-family: sans-serif; }
-        .animate-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Dark Theme Global - Background Darkened */
+        body { background-color: #020617; color: #e2e8f0; font-family: sans-serif; }
+        .animate-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         
+        /* Hide number input spinners */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
+        /* Scrollbar styling */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body>
-    <div id="root">Cargando aplicación...</div>
+    <div id="root">Loading App...</div>
 
     <script type="text/babel">
         class ErrorBoundary extends React.Component {
             constructor(props) { super(props); this.state = { hasError: false }; }
             static getDerivedStateFromError(error) { return { hasError: true }; }
             render() {
-                if (this.state.hasError) return <div className="p-10 text-center text-red-400">Algo salió mal. Recarga la página.</div>;
+                if (this.state.hasError) return <div className="p-10 text-center text-red-400">Something went wrong. Please reload.</div>;
                 return this.props.children;
             }
         }
 
         const { useState, useEffect, useMemo } = React;
 
-        // --- ICONOS ---
+        // --- ICONS ---
         const IconWrapper = ({ children, className, size = 24 }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {children}
@@ -68,57 +70,164 @@
             MapPin: (p) => <IconWrapper {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></IconWrapper>,
             DollarSign: (p) => <IconWrapper {...p}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></IconWrapper>,
             ShoppingCart: (p) => <IconWrapper {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></IconWrapper>,
-            RefreshCw: (p) => <IconWrapper {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></IconWrapper>
+            RefreshCw: (p) => <IconWrapper {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></IconWrapper>,
+            Box: (p) => <IconWrapper {...p}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22v-9"/></IconWrapper>,
+            ArrowRight: (p) => <IconWrapper {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconWrapper>,
+            Trash: (p) => <IconWrapper {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconWrapper>,
+            BarChart: (p) => <IconWrapper {...p}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></IconWrapper>
         };
 
-        // --- DATOS INICIALES ---
+        // --- MODAL COMPONENT ---
+        const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDestructive }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
+                    <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full p-6 shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                            {isDestructive ? <Icons.AlertTriangle className="text-red-500" /> : <Icons.CheckCircle className="text-indigo-500" />}
+                            {title}
+                        </h3>
+                        <p className="text-gray-300 mb-6 whitespace-pre-line leading-relaxed">{message}</p>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors border border-gray-700 font-medium">Cancel</button>
+                            <button onClick={onConfirm} className={`px-4 py-2 rounded-lg text-white font-bold transition-colors shadow-lg ${isDestructive ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20'}`}>Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- CHARTS COMPONENT ---
+        const ChartsView = ({ data, onClose }) => {
+            // Filter only items with activity (sales or physical count data)
+            const activeItems = useMemo(() => {
+                let items = [];
+                data.forEach(cat => {
+                    cat.items.forEach(item => {
+                        const hasData = item.bar1 || item.bar2 || item.bodega || item.barroluco || item.sales;
+                        if (hasData) {
+                            const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
+                            const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
+                            const purchases = parseFloat(item.purchases)||0;
+                            const sales = parseFloat(item.sales)||0;
+                            const systemConsumption = totalStart + purchases - totalPhys;
+                            const diff = sales - systemConsumption;
+                            items.push({ ...item, systemConsumption, sales, diff });
+                        }
+                    });
+                });
+                // Sort by biggest discrepancy (absolute value)
+                return items.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+            }, [data]);
+
+            return (
+                <div className="fixed inset-0 bg-black/90 flex flex-col z-50 backdrop-blur-sm animate-in overflow-hidden">
+                    <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Icons.BarChart className="text-amber-500" /> Sales vs. Consumption Analysis
+                        </h2>
+                        <button onClick={onClose} className="p-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700">Close</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {activeItems.length === 0 && <div className="text-center text-gray-500 mt-20">No data to display yet.</div>}
+                        
+                        {activeItems.map(item => {
+                            // Calculate max for simple scaling
+                            const maxValue = Math.max(item.systemConsumption, item.sales, 1); 
+                            const consumePercent = Math.min((item.systemConsumption / maxValue) * 100, 100);
+                            const salesPercent = Math.min((item.sales / maxValue) * 100, 100);
+                            
+                            return (
+                                <div key={item.id} className="bg-gray-800 border border-gray-700 p-4 rounded-xl">
+                                    <div className="flex justify-between mb-2">
+                                        <span className="font-bold text-white">{item.name}</span>
+                                        <span className={`font-mono font-bold ${item.diff < 0 ? 'text-red-400' : 'text-blue-400'}`}>
+                                            Diff: {item.diff > 0 ? '+' : ''}{item.diff.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {/* Consumption Bar */}
+                                        <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden flex items-center">
+                                            <div style={{ width: `${consumePercent}%` }} className="h-full bg-gray-600 transition-all duration-500"></div>
+                                            <span className="absolute left-2 text-xs font-bold text-white drop-shadow-md">Consumed: {item.systemConsumption.toFixed(1)}</span>
+                                        </div>
+                                        {/* Sales Bar */}
+                                        <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden flex items-center">
+                                            <div style={{ width: `${salesPercent}%` }} className={`h-full transition-all duration-500 ${item.diff < 0 ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                            <span className="absolute left-2 text-xs font-bold text-white drop-shadow-md">Sold: {item.sales.toFixed(1)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- INITIAL DATA ---
         const createItem = (id, name, startStock = 0) => ({
             id, name,
             bar1: "", bar2: "", bodega: "", barroluco: "",
-            start: startStock, purchases: "", sales: "", toastSales: ""
+            start_bar1: "", start_bar2: "", start_bodega: startStock, start_barroluco: "",
+            purchases: "", sales: ""
         });
 
         const INITIAL_DATA = [
             {
-                category: "Licores Premium (Tequila/Whisky)",
+                category: "Premium Liquor (Tequila/Whisky)",
                 items: [
-                    createItem("liq-1", "Casamigos Blanco", 22),
-                    createItem("liq-2", "Casamigos Reposado", 22),
-                    createItem("liq-3", "Don Julio Blanco", 65),
-                    createItem("liq-4", "Don Julio Reposado", 19),
-                    createItem("liq-5", "Don Julio Cristalino", 0),
+                    createItem("liq-1", "Casamigos Blanco", 0),
+                    createItem("liq-2", "Casamigos Reposado", 0),
+                    createItem("liq-23", "Espolon Blanco", 0),
+                    createItem("liq-24", "Espolon Reposado", 0),
+                    createItem("liq-25", "Patron Cristalino", 0),
+                    createItem("liq-3", "Don Julio Blanco", 0),
+                    createItem("liq-4", "Don Julio Reposado", 0),
                     createItem("liq-6", "Patron Silver", 0),
                     createItem("liq-7", "Patron Reposado", 0),
                     createItem("liq-8", "Clase Azul", 0),
-                    createItem("liq-9", "Grand Old Parr 12", 22),
-                    createItem("liq-10", "Crown Royal Regal Apple", 24),
-                    createItem("liq-11", "Crown Royal", 31),
-                    createItem("liq-12", "Buchanans 12", 23),
-                    createItem("liq-13", "Johnnie Walker Black", 24),
-                    createItem("liq-14", "Captain Morgan Spiced", 44),
-                    createItem("liq-15", "Brugal Añejo", 0),
+                    createItem("liq-9", "Grand Old Parr 12", 0),
+                    createItem("liq-11", "Crown Royal Regal", 0),
+                    createItem("liq-10", "Apple Crown Royal", 0),
+                    createItem("liq-26", "Hennessy VS", 0),
+                    createItem("liq-12", "Buchanans 12", 0),
+                    createItem("liq-13", "Johnnie Walker Black", 0),
+                    createItem("liq-14", "Capitan Morgan Spice", 0),
+                    createItem("liq-15", "Brugal Anejo", 0),
+                    createItem("liq-27", "Tito's Texas Vodka", 0),
                     createItem("liq-16", "Grey Goose", 0),
-                    createItem("liq-17", "Jack Daniels Black", 57),
-                    createItem("liq-18", "Woodford Reserve", 21),
+                    createItem("liq-17", "Jack Daniels Black", 0),
+                    createItem("liq-18", "WoodFord Reserve", 0),
                     createItem("liq-19", "Fernet Branca", 0),
+                    createItem("liq-28", "Jagermeister", 0),
+                    createItem("liq-29", "Jameson", 0),
+                    createItem("liq-30", "Beefeater", 0),
+                    createItem("liq-32", "Wahaka Mezcal", 0),
+                    createItem("liq-31", "Malibu", 0),
+                    createItem("vin-4", "Moet Imperial Necta Rose", 0),
                     createItem("liq-20", "Disaronno Amaretto", 0),
+                    createItem("vin-3", "Procecco Zonin", 0),
                     createItem("liq-21", "Remy Martin", 0),
-                    createItem("liq-22", "Novo Fogo Silver Cachaça", 0),
+                    createItem("liq-22", "Novo Fogo Silver Cachaca", 0),
                 ]
             },
             {
-                category: "Wells (Licores de la Casa)",
+                category: "Wells (House Liquor)",
                 items: [
                     createItem("wel-1", "Bacardi Light", 0),
                     createItem("wel-2", "Bacardi Lime", 0),
-                    createItem("wel-3", "Pirassununga Cachaça 51", 24),
+                    createItem("wel-13", "Bacardi Limon", 0),
+                    createItem("wel-3", "Pirassununga Cachaça 51", 0),
                     createItem("wel-4", "Barton Naturals Vodka", 0),
+                    createItem("wel-15", "Barton Gin", 0),
                     createItem("wel-5", "Peach Schnapps Boston", 0),
                     createItem("wel-6", "Montezuma White", 0),
-                    createItem("wel-7", "Triple Sec Boston", 31),
+                    createItem("wel-7", "Triple Sec Boston", 0),
                     createItem("wel-8", "Long Island Tea Mix", 0),
                     createItem("wel-9", "Curacao Blue", 0),
                     createItem("wel-10", "Melon Boston", 0),
+                    createItem("wel-14", "Sour Apple", 0),
                     createItem("wel-11", "Sour Apple HW", 0),
                     createItem("wel-12", "Sour Cherry Boston", 0),
                 ]
@@ -134,46 +243,53 @@
                 ]
             },
             {
-                category: "Cervezas",
+                category: "Beers",
                 items: [
                     createItem("cer-1", "Pacifico", 0),
                     createItem("cer-2", "Michelob Ultra", 0),
                     createItem("cer-3", "Modelo Especial", 0),
+                    createItem("cer-5", "Corona", 0),
                     createItem("cer-4", "Heineken", 0),
                 ]
             },
             {
-                category: "Vinos",
+                category: "Wines",
                 items: [
                     createItem("vin-1", "Sangria", 0),
                     createItem("vin-2", "Chardonnay El Enemigo", 0),
-                    createItem("vin-3", "Prosecco Zonin", 0),
-                    createItem("vin-4", "Imperial Nectar Rose", 0),
                 ]
             }
         ];
 
-        // --- COMPONENTES ---
+        // --- COMPONENTS ---
 
-        const Header = ({ onReset, onDownload }) => (
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onShowCharts }) => (
             <header className="bg-black/90 border-b border-gray-800 text-white p-4 sticky top-0 z-30 shadow-2xl backdrop-blur-md">
-                <div className="max-w-5xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-3 w-full lg:w-auto">
                         <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-amber-500">
                             <Icons.Beer size={24} />
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg leading-tight text-gray-100">Master Bar Control</h1>
-                            <p className="text-xs text-gray-400">Análisis de Ventas</p>
+                            <h1 className="font-bold text-lg leading-tight text-gray-100">Master Bar Control Palmas</h1>
+                            <p className="text-xs text-gray-400">Sales Analysis</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={onReset} className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-full transition-all border border-gray-700" title="Reiniciar">
-                            <Icons.RotateCcw size={18} />
+                    <div className="flex flex-wrap justify-center gap-2 w-full lg:w-auto lg:justify-end">
+                        <button onClick={onShowCharts} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-medium transition-all border border-gray-600 text-sm">
+                            <Icons.BarChart size={18} className="text-amber-400" />
+                            Charts
+                        </button>
+                        <button onClick={onNewPeriod} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg shadow-indigo-900/20 active:scale-95 text-sm">
+                            <Icons.ArrowRight size={18} />
+                            Next Period
                         </button>
                         <button onClick={onDownload} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg shadow-emerald-900/20 active:scale-95 text-sm">
                             <Icons.Download size={18} />
-                            <span className="hidden sm:inline">Descargar Excel</span>
+                            CSV
+                        </button>
+                        <button onClick={onClearAll} className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-all border border-red-900/30" title="Clear All">
+                            <Icons.Trash size={20} />
                         </button>
                     </div>
                 </div>
@@ -181,7 +297,7 @@
         );
 
         const CategoryHeader = ({ title, icon: Icon, isOpen, toggle }) => (
-            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-gray-800/80 border border-gray-700/50 hover:bg-gray-800 rounded-xl shadow-lg mb-2 transition-all sticky top-[76px] lg:top-[88px] z-20 backdrop-blur-sm group">
+            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-gray-800/80 border border-gray-700/50 hover:bg-gray-800 rounded-xl shadow-lg mb-2 transition-all sticky top-[80px] z-20 backdrop-blur-sm group">
                 <div className="flex items-center gap-3">
                     <div className="text-amber-500 group-hover:text-amber-400 transition-colors">
                         <Icon size={20} />
@@ -208,33 +324,28 @@
         const InventoryRow = ({ item, onUpdate }) => {
             const [isExpanded, setIsExpanded] = useState(false);
             
-            // --- CÁLCULOS ---
             const totalPhysical = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
-            
-            const start = parseFloat(item.start) || 0;
+            const totalStart = (parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0);
             const purchases = parseFloat(item.purchases) || 0;
             const sales = parseFloat(item.sales) || 0;
             
-            // Venta Sistema = Ini + Compras - Fisico
-            const systemConsumption = start + purchases - totalPhysical;
-
-            // Diferencia = Ventas Registradas (Sales) - Venta Sistema
+            const systemConsumption = totalStart + purchases - totalPhysical;
             const diff = sales - systemConsumption;
 
             const hasPhysicalData = item.bar1 || item.bar2 || item.bodega || item.barroluco;
+            const hasStartData = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
             
-            // Colores
             let statusColor = "bg-gray-800 border-gray-700"; 
             let badgeClass = "text-gray-400 bg-gray-900 border border-gray-700";
             
-            if (hasPhysicalData) {
-                if (diff < -0.1) { // Pérdida (Rojo)
+            if (hasPhysicalData && hasStartData) {
+                if (diff < -0.1) { 
                     statusColor = "bg-gray-800 border-red-900/50 shadow-[inset_4px_0_0_0_#ef4444]";
                     badgeClass = "text-red-400 bg-red-950/30 border border-red-900/50";
-                } else if (diff > 0.1) { // Ganancia (Azul)
+                } else if (diff > 0.1) {
                     statusColor = "bg-gray-800 border-blue-900/50 shadow-[inset_4px_0_0_0_#3b82f6]";
                     badgeClass = "text-blue-400 bg-blue-950/30 border border-blue-900/50";
-                } else { // Perfecto (Verde)
+                } else { 
                     statusColor = "bg-gray-800 border-emerald-900/50 shadow-[inset_4px_0_0_0_#10b981]";
                     badgeClass = "text-emerald-400 bg-emerald-950/30 border border-emerald-900/50";
                 }
@@ -246,16 +357,16 @@
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-200 text-base">{item.name}</span>
-                                {hasPhysicalData ? (
+                                {(hasPhysicalData && hasStartData) ? (
                                     <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>
                                         {diff > 0 ? "+" : ""}{diff.toFixed(1)}
                                     </span>
                                 ) : null}
                             </div>
                             <div className="text-xs text-gray-500 mt-1 flex gap-3 font-mono">
-                                <span>Consumo Calc: <b className="text-gray-300">{hasPhysicalData ? systemConsumption.toFixed(1) : "-"}</b></span>
+                                <span>On Hand: <b>{totalStart}</b></span>
                                 <span className="text-gray-600">|</span>
-                                <span>Venta Reg: <b className="text-gray-300">{sales.toFixed(1)}</b></span>
+                                <span>Physical: <b>{totalPhysical}</b></span>
                             </div>
                         </div>
                         <div>{isExpanded ? <Icons.ChevronUp className="text-gray-500" /> : <Icons.ChevronDown className="text-gray-600" />}</div>
@@ -264,34 +375,49 @@
                     {isExpanded && (
                         <div className="p-4 border-t border-gray-700/50 bg-black/20 space-y-4 animate-in">
                             <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                                <div className="flex items-center gap-2 mb-3 text-gray-300 font-bold text-[10px] uppercase tracking-wider">
+                                    <Icons.Box size={12} /> 1. On Hand (Start Stock)
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    <InputField label="Bar 1" value={item.start_bar1} onChange={(v) => onUpdate(item.id, 'start_bar1', v)} colorClass="border-gray-700 focus:border-amber-500" />
+                                    <InputField label="Bar 2" value={item.start_bar2} onChange={(v) => onUpdate(item.id, 'start_bar2', v)} colorClass="border-gray-700 focus:border-amber-500" />
+                                    <InputField label="Storage" value={item.start_bodega} onChange={(v) => onUpdate(item.id, 'start_bodega', v)} colorClass="border-gray-700 focus:border-amber-500" />
+                                    <InputField label="Barroluco" value={item.start_barroluco} onChange={(v) => onUpdate(item.id, 'start_barroluco', v)} colorClass="border-gray-700 focus:border-amber-500" />
+                                </div>
+                                <div className="text-right mt-2 text-xs font-bold text-amber-500/80">Total On Hand: {totalStart}</div>
+                            </div>
+
+                            <div className="bg-gray-900/30 p-3 rounded-lg border border-gray-700/30">
+                                <div className="grid grid-cols-1 gap-3">
+                                    <InputField label="2. Purchases (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" />
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
                                 <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider">
-                                    <Icons.MapPin size={12} /> 1. Conteo Físico (Restar al sistema)
+                                    <Icons.MapPin size={12} /> 3. Physical Count (End of Shift)
                                 </div>
                                 <div className="grid grid-cols-4 gap-2">
                                     <InputField label="Bar 1" value={item.bar1} onChange={(v) => onUpdate(item.id, 'bar1', v)} colorClass="border-gray-700 focus:border-indigo-500" />
                                     <InputField label="Bar 2" value={item.bar2} onChange={(v) => onUpdate(item.id, 'bar2', v)} colorClass="border-gray-700 focus:border-indigo-500" />
-                                    <InputField label="Bodega" value={item.bodega} onChange={(v) => onUpdate(item.id, 'bodega', v)} colorClass="border-gray-700 focus:border-indigo-500" />
-                                    <InputField label="B.Luco" value={item.barroluco} onChange={(v) => onUpdate(item.id, 'barroluco', v)} colorClass="border-gray-700 focus:border-indigo-500" />
+                                    <InputField label="Storage" value={item.bodega} onChange={(v) => onUpdate(item.id, 'bodega', v)} colorClass="border-gray-700 focus:border-indigo-500" />
+                                    <InputField label="Barroluco" value={item.barroluco} onChange={(v) => onUpdate(item.id, 'barroluco', v)} colorClass="border-gray-700 focus:border-indigo-500" />
                                 </div>
-                                <div className="text-right mt-2 text-xs font-bold text-gray-400">Total Físico: {totalPhysical}</div>
+                                <div className="text-right mt-2 text-xs font-bold text-indigo-400">Total Physical: {totalPhysical}</div>
                             </div>
 
                             <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20">
                                 <div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider">
-                                    <Icons.Calculator size={12} /> 2. Cálculo de Consumo vs Ventas
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <InputField label="Inv. Inicial" value={item.start} onChange={(v) => onUpdate(item.id, 'start', v)} colorClass="border-gray-600" />
-                                    <InputField label="Compras (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" />
+                                    <Icons.Calculator size={12} /> 4. Results
                                 </div>
                                 <div className="grid grid-cols-1 gap-3">
-                                    <InputField label="Ventas Totales ($)" value={item.sales} onChange={(v) => onUpdate(item.id, 'sales', v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" />
+                                    <InputField label="Total Sales POS" value={item.sales} onChange={(v) => onUpdate(item.id, 'sales', v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" />
                                 </div>
-                                <div className="text-right mt-3 text-xs text-gray-400 font-mono space-y-1">
-                                    <div className="text-amber-500/80">Venta Sistema = {start} + {purchases || 0} - {totalPhysical} = <b>{systemConsumption}</b></div>
-                                    <div className="text-blue-400/80">Venta Registrada = <b>{sales}</b></div>
-                                    <div className={`font-bold ${diff < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                        Diferencia = {diff.toFixed(2)}
+                                
+                                <div className="text-right mt-4 text-xs text-gray-400 font-mono space-y-2">
+                                    <div className="text-amber-500/80">System Sales = {totalStart} + {purchases || 0} - {totalPhysical} = <b>{systemConsumption}</b></div>
+                                    <div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        Difference = {diff.toFixed(2)}
                                     </div>
                                 </div>
                             </div>
@@ -301,35 +427,76 @@
             );
         };
 
-        // --- APP PRINCIPAL ---
+        // --- MAIN APP ---
+
         function App() {
             const [data, setData] = useState(() => {
                 try {
-                    const saved = localStorage.getItem('bar-master-inventory-v3-sales'); 
+                    const saved = localStorage.getItem('bar-inventory-v10-charts');
                     if (saved) return JSON.parse(saved);
-                } catch (e) { }
+                } catch (e) {
+                    console.log("Error loading data", e);
+                }
                 return INITIAL_DATA;
             });
+            
             const [searchTerm, setSearchTerm] = useState("");
             const [openCategories, setOpenCategories] = useState({
-                "Licores Premium (Tequila/Whisky)": true,
-                "Wells (Licores de la Casa)": false,
+                "Premium Liquor (Tequila/Whisky)": true,
+                "Wells (House Liquor)": false,
                 "Seltzer & Energy": false,
-                "Cervezas": false,
-                "Vinos": false
+                "Beers": false,
+                "Wines": false
             });
+            
             const [notification, setNotification] = useState(null);
+            const [modalConfig, setModalConfig] = useState(null);
+            const [showCharts, setShowCharts] = useState(false);
 
             useEffect(() => {
-                localStorage.setItem('bar-master-inventory-v3-sales', JSON.stringify(data));
+                localStorage.setItem('bar-inventory-v10-charts', JSON.stringify(data));
             }, [data]);
 
-            const handleReset = () => {
-                if (window.confirm("¿Seguro que quieres BORRAR TODO?")) {
-                    setData(INITIAL_DATA);
-                    localStorage.removeItem('bar-master-inventory-v3-sales');
-                    showNotification("Inventario reiniciado.");
-                }
+            const confirmNewPeriod = () => {
+                setModalConfig({
+                    title: "Start Next Period?",
+                    message: "This will close the current shift.\n\n1. Current 'Physical Count' will move to 'On Hand'.\n2. Sales and Purchases will be cleared.\n\nAre you sure?",
+                    isDestructive: false,
+                    onConfirm: performNewPeriod
+                });
+            };
+
+            const performNewPeriod = () => {
+                setData(prevData => prevData.map(cat => ({
+                    ...cat,
+                    items: cat.items.map(item => ({
+                        ...item,
+                        start_bar1: item.bar1 !== "" ? item.bar1 : 0, 
+                        start_bar2: item.bar2 !== "" ? item.bar2 : 0,
+                        start_bodega: item.bodega !== "" ? item.bodega : 0,
+                        start_barroluco: item.barroluco !== "" ? item.barroluco : 0,
+                        bar1: "", bar2: "", bodega: "", barroluco: "",
+                        purchases: "", sales: ""
+                    }))
+                })));
+                setModalConfig(null);
+                showNotification("New Period Started!");
+            };
+
+            const confirmClearAll = () => {
+                setModalConfig({
+                    title: "Delete All Data?",
+                    message: "WARNING: This will reset everything to ZERO.\nThis action cannot be undone.",
+                    isDestructive: true,
+                    onConfirm: performClearAll
+                });
+            };
+
+            const performClearAll = () => {
+                setData(INITIAL_DATA);
+                localStorage.removeItem('bar-inventory-v10-charts');
+                setModalConfig(null);
+                showNotification("Database Reset to ZERO.");
             };
 
             const updateItem = (itemId, field, value) => {
@@ -343,56 +510,35 @@
                 setOpenCategories(prev => ({...prev, [catName]: !prev[catName]}));
             };
 
-            // --- FUNCIÓN PARA DESCARGAR EXCEL (CSV) ---
             const downloadReport = () => {
-                let csvContent = "PRODUCTO,FISICO TOTAL,INICIAL,COMPRAS,VENTA SISTEMA (Consumo),VENTAS TOTALES,DIFERENCIA\n";
+                let csvContent = "PRODUCT,TOTAL ON HAND,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,TOTAL SALES POS,DIFFERENCE\n";
                 let count = 0;
-
                 data.forEach(cat => {
                     cat.items.forEach(item => {
-                        const hasData = item.bar1 || item.bar2 || item.bodega || item.barroluco || item.purchases || item.sales;
+                        const hasData = item.bar1 || item.bar2 || item.bodega || item.barroluco || item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco || item.purchases || item.sales;
                         if (hasData) {
                             count++;
                             const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
-                            const start = parseFloat(item.start)||0;
+                            const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
                             const purchases = parseFloat(item.purchases)||0;
                             const sales = parseFloat(item.sales)||0;
-                            
-                            const systemConsumption = start + purchases - totalPhys;
+                            const systemConsumption = totalStart + purchases - totalPhys;
                             const diff = sales - systemConsumption;
-
-                            // Formato CSV (comillas para evitar errores con comas en nombres)
-                            const row = [
-                                `"${item.name}"`,
-                                totalPhys,
-                                start,
-                                purchases,
-                                systemConsumption,
-                                sales,
-                                diff.toFixed(2)
-                            ].join(",");
-                            
+                            const row = [`"${item.name}"`, totalStart, totalPhys, purchases, systemConsumption, sales, diff.toFixed(2)].join(",");
                             csvContent += row + "\n";
                         }
                     });
                 });
-
-                if (count === 0) {
-                    showNotification("Ingresa datos primero para descargar.");
-                    return;
-                }
-
-                // Crear Blob con BOM para que Excel lea acentos correctamente
+                if (count === 0) { showNotification("Enter data first."); return; }
                 const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
-                link.setAttribute("download", `Reporte_Bar_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+                link.setAttribute("download", `Bar_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
-                showNotification("¡Reporte descargado!");
+                showNotification("Report downloaded!");
             };
 
             const showNotification = (msg) => {
@@ -409,28 +555,25 @@
             }, [data, searchTerm]);
 
             const getIcon = (catName) => {
-                if (catName.includes("Licores")) return Icons.GlassWater;
+                if (catName.includes("Premium")) return Icons.GlassWater;
                 if (catName.includes("Wells")) return Icons.Package;
-                if (catName.includes("Cervezas")) return Icons.Beer;
-                if (catName.includes("Vinos")) return Icons.Wine;
+                if (catName.includes("Beers")) return Icons.Beer;
+                if (catName.includes("Wines")) return Icons.Wine;
                 return Icons.RefreshCw;
             };
 
             return (
-                <div className="min-h-screen pb-20">
-                    <Header onReset={handleReset} onDownload={downloadReport} />
-                    
+                <div className="min-h-screen bg-slate-50 font-sans pb-20">
+                    <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onShowCharts={() => setShowCharts(true)} />
                     <div className="bg-gray-900 p-4 border-b border-gray-800 sticky top-[72px] z-20">
                         <div className="max-w-5xl mx-auto relative">
                             <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                            <input type="text" placeholder="Buscar producto..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                            <input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-gray-800 rounded-xl pl-10 pr-4 py-3 text-gray-200 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-600" />
                         </div>
                     </div>
-
                     <main className="max-w-5xl mx-auto p-4 space-y-4">
-                        {filteredData.length === 0 && <div className="text-center py-20 text-gray-600"><p>No se encontraron productos.</p></div>}
-                        
+                        {filteredData.length === 0 && <div className="text-center py-20 text-gray-600"><p>No products found.</p></div>}
                         {filteredData.map((cat) => (
                             <div key={cat.category} className="mb-6">
                                 {!searchTerm && <CategoryHeader title={cat.category} icon={getIcon(cat.category)} isOpen={openCategories[cat.category]} toggle={() => toggleCategory(cat.category)} />}
@@ -442,7 +585,8 @@
                             </div>
                         ))}
                     </main>
-
+                    <ConfirmationModal isOpen={!!modalConfig} onClose={() => setModalConfig(null)} onConfirm={modalConfig?.onConfirm} title={modalConfig?.title} message={modalConfig?.message} isDestructive={modalConfig?.isDestructive} />
+                    {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {notification && (
                         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl border border-gray-700 flex items-center gap-3 animate-in z-50 whitespace-nowrap">
                             <Icons.CheckCircle size={18} className="text-emerald-400" />
