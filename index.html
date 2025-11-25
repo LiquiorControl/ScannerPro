@@ -292,7 +292,6 @@
             const [isExpanded, setIsExpanded] = useState(false);
             const [shotsInput, setShotsInput] = useState(""); 
             
-            // Detect if this is a unit-based category (Beers, Seltzers)
             const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer");
 
             const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
@@ -305,18 +304,25 @@
             const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
             const hasBarcode = !!item.barcode;
 
-            // --- SHOT CALCULATOR LOGIC ---
             const bottleSizeOz = isWells ? 33.814 : 25.36;
             const shotsPerBottle = bottleSizeOz / 1.2; 
 
             const handleSalesChange = (type, val) => {
                 let newBottles = type === 'bottles' ? val : (item.sold_bottles || "");
                 let newShots = type === 'shots' ? val : (item.sold_shots || "");
-                const b = parseFloat(newBottles) || 0;
-                const s = parseFloat(newShots) || 0;
-                
-                const shotsInBottles = (s * 1.2) / bottleSizeOz;
-                const totalSales = b + shotsInBottles;
+                let totalSales = 0;
+
+                if (isUnitBased) {
+                    const cans = parseFloat(newBottles) || 0;
+                    const buckets = parseFloat(newShots) || 0;
+                    totalSales = cans + (buckets * 6);
+                } else {
+                    const b = parseFloat(newBottles) || 0;
+                    const s = parseFloat(newShots) || 0;
+                    const shotsInBottles = (s * 1.2) / bottleSizeOz;
+                    totalSales = b + shotsInBottles;
+                }
+
                 const formattedSales = totalSales > 0 ? totalSales.toFixed(2) : "";
 
                 onUpdate(item.id, {
@@ -324,6 +330,10 @@
                     sold_shots: newShots,
                     sales: formattedSales
                 });
+            };
+            
+            const handleDirectSalesUpdate = (val) => {
+                 onUpdate(item.id, 'sales', val);
             };
 
             let statusColor = "bg-slate-800 border-slate-700"; 
@@ -385,64 +395,46 @@
                             <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20">
                                 <div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Sales Calculator (POS)</div>
                                 
-                                {isUnitBased ? (
-                                    /* SMART CALCULATOR: BEERS & SELTZERS (SIMPLE UNITS) */
-                                    <div className="grid grid-cols-1 gap-3 mb-2">
+                                <div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10">
+                                    <div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">
+                                        {isUnitBased ? "Unit Calculator" : `Shot Calculator (1.2oz @ ${isWells ? '1L' : '750ml'})`}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 mb-2">
                                         <div className="relative group">
-                                            <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Cans / Units Sold</label>
+                                            <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">
+                                                {isUnitBased ? "Cans / Units" : "Bottles"}
+                                            </label>
                                             <input 
                                                 type="number" 
                                                 step="1" 
                                                 placeholder="0" 
-                                                value={item.sales || ""} 
-                                                onChange={(e) => onUpdate(item.id, 'sales', e.target.value)}
+                                                value={item.sold_bottles || ""} 
+                                                onChange={(e) => handleSalesChange('bottles', e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                            />
+                                        </div>
+                                        <div className="relative group">
+                                            <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">
+                                                {isUnitBased ? "Buckets (x6)" : "Shots"}
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                step="1" 
+                                                placeholder="0" 
+                                                value={item.sold_shots || ""} 
+                                                onChange={(e) => handleSalesChange('shots', e.target.value)}
                                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
                                             />
                                         </div>
                                     </div>
-                                ) : (
-                                    /* SMART CALCULATOR: LIQUOR (BOTTLES + SHOTS) */
-                                    <>
-                                        <div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10">
-                                            <div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">
-                                                Shot Calculator (1.2oz @ {isWells ? '1L' : '750ml'})
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3 mb-2">
-                                                <div className="relative group">
-                                                    <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Bottles</label>
-                                                    <input 
-                                                        type="number" 
-                                                        step="1" 
-                                                        placeholder="0" 
-                                                        value={item.sold_bottles || ""} 
-                                                        onChange={(e) => handleSalesChange('bottles', e.target.value)}
-                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
-                                                    />
-                                                </div>
-                                                <div className="relative group">
-                                                    <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Shots</label>
-                                                    <input 
-                                                        type="number" 
-                                                        step="1" 
-                                                        placeholder="0" 
-                                                        value={item.sold_shots || ""} 
-                                                        onChange={(e) => handleSalesChange('shots', e.target.value)}
-                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="text-[9px] text-gray-500 mt-1">
-                                                Auto-updates Sales. (1 Bottle = {shotsPerBottle.toFixed(2)} Shots)
-                                            </div>
-                                        </div>
-                                        {/* Hidden calc field for Liquor (read only for clarity) */}
-                                        <div className="bg-slate-900/50 rounded p-2 flex justify-between items-center border border-slate-700/50">
-                                            <span className="text-xs text-gray-400">Total Sales (Calculated):</span>
-                                            <span className="font-mono font-bold text-amber-400 text-lg">{item.sales || "0"}</span>
-                                        </div>
-                                    </>
-                                )}
-                                
+                                    <div className="text-[9px] text-gray-500 mt-1">
+                                        {isUnitBased ? "Auto-updates Sales. (1 Bucket = 6 Units)" : `Auto-updates Sales. (1 Bottle = ${shotsPerBottle.toFixed(2)} Shots)`}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3">
+                                    <InputField label="Total Sales POS (Calculated)" value={item.sales} onChange={(v) => handleDirectSalesUpdate(v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" />
+                                </div>
                                 <div className="text-right mt-4 text-xs text-gray-400 font-mono space-y-2">
                                     <div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div>
                                     <div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div>
@@ -515,7 +507,7 @@
                 };
                 const loadLocal = () => {
                     try {
-                        const saved = localStorage.getItem('bar-inventory-final-v20');
+                        const saved = localStorage.getItem('bar-inventory-final-v21');
                         if (saved) setData(JSON.parse(saved));
                     } catch(e) {}
                     setLoading(false);
@@ -523,10 +515,9 @@
                 initApp();
             }, []);
 
-            // --- CSV FIX HERE ---
             const downloadReport = () => {
                 const safeDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                let csvContent = "PRODUCT,START STOCK,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,SOLD BOTTLES,SOLD SHOTS,TOTAL SALES POS,DIFFERENCE\n";
+                let csvContent = "PRODUCT,START STOCK,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,SOLD BOTTLES/CANS,SOLD SHOTS/BUCKETS,TOTAL SALES POS,DIFFERENCE\n";
                 
                 data.forEach(cat => {
                     cat.items.forEach(item => {
@@ -573,7 +564,7 @@
                         fb.setDoc(fb.doc(db, 'inventory', 'master'), { items: newData });
                     } catch (e) {}
                 } else {
-                    localStorage.setItem('bar-inventory-final-v20', JSON.stringify(newData));
+                    localStorage.setItem('bar-inventory-final-v21', JSON.stringify(newData));
                 }
             };
 
@@ -757,7 +748,7 @@
                                                 onLinkBarcode={linkBarcodeToItem} 
                                                 pendingBarcode={pendingBarcode}
                                                 isWells={cat.category.includes("Wells")}
-                                                categoryName={cat.category} // PASS CATEGORY NAME
+                                                categoryName={cat.category} // Pass category name for unit detection
                                             />
                                         ))}
                                     </div>
