@@ -304,23 +304,33 @@
             const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
             const hasBarcode = !!item.barcode;
 
+            // --- SHOT CALCULATOR LOGIC ---
             const bottleSizeOz = isWells ? 33.814 : 25.36;
             const shotsPerBottle = bottleSizeOz / 1.2; 
 
             const handleSalesChange = (type, val) => {
                 let newBottles = type === 'bottles' ? val : (item.sold_bottles || "");
                 let newShots = type === 'shots' ? val : (item.sold_shots || "");
+                let newComps = type === 'comps' ? val : (item.sold_comps || "");
+
+                const b = parseFloat(newBottles) || 0;
+                const s = parseFloat(newShots) || 0;
+                const c = parseFloat(newComps) || 0;
+                
                 let totalSales = 0;
 
                 if (isUnitBased) {
-                    const cans = parseFloat(newBottles) || 0;
-                    const buckets = parseFloat(newShots) || 0;
-                    totalSales = cans + (buckets * 6);
+                    const cans = b;
+                    const buckets = s;
+                    const comps = c;
+                    totalSales = cans + (buckets * 6) + comps;
                 } else {
-                    const b = parseFloat(newBottles) || 0;
-                    const s = parseFloat(newShots) || 0;
+                    // Liquor
                     const shotsInBottles = (s * 1.2) / bottleSizeOz;
-                    totalSales = b + shotsInBottles;
+                    // UPDATED: Comps are ALWAYS bottles for all liquor categories now.
+                    const compsInBottles = c; 
+                    
+                    totalSales = b + shotsInBottles + compsInBottles;
                 }
 
                 const formattedSales = totalSales > 0 ? totalSales.toFixed(2) : "";
@@ -328,6 +338,7 @@
                 onUpdate(item.id, {
                     sold_bottles: newBottles,
                     sold_shots: newShots,
+                    sold_comps: newComps,
                     sales: formattedSales
                 });
             };
@@ -399,7 +410,7 @@
                                     <div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">
                                         {isUnitBased ? "Unit Calculator" : `Shot Calculator (1.2oz @ ${isWells ? '1L' : '750ml'})`}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 mb-2">
+                                    <div className="grid grid-cols-3 gap-3 mb-2">
                                         <div className="relative group">
                                             <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">
                                                 {isUnitBased ? "Cans / Units" : "Bottles"}
@@ -410,7 +421,7 @@
                                                 placeholder="0" 
                                                 value={item.sold_bottles || ""} 
                                                 onChange={(e) => handleSalesChange('bottles', e.target.value)}
-                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
                                             />
                                         </div>
                                         <div className="relative group">
@@ -423,12 +434,25 @@
                                                 placeholder="0" 
                                                 value={item.sold_shots || ""} 
                                                 onChange={(e) => handleSalesChange('shots', e.target.value)}
-                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                            />
+                                        </div>
+                                        <div className="relative group">
+                                            <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">
+                                                {isUnitBased ? "Comps (Units)" : "Comps (Bottles)"}
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                step="1" 
+                                                placeholder="0" 
+                                                value={item.sold_comps || ""} 
+                                                onChange={(e) => handleSalesChange('comps', e.target.value)}
+                                                className="w-full bg-slate-900 border border-emerald-700/50 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-emerald-500 text-emerald-100"
                                             />
                                         </div>
                                     </div>
                                     <div className="text-[9px] text-gray-500 mt-1">
-                                        {isUnitBased ? "Auto-updates Sales. (1 Bucket = 6 Units)" : `Auto-updates Sales. (1 Bottle = ${shotsPerBottle.toFixed(2)} Shots)`}
+                                        {isUnitBased ? "Auto-updates. (1 Bucket = 6 Units) + Comps" : `Auto-updates. (1 Bottle = ${shotsPerBottle.toFixed(2)} Shots) + Comps`}
                                     </div>
                                 </div>
 
@@ -451,7 +475,7 @@
             bar1: "", bar2: "", bodega: "", barroluco: "",
             start_bar1: "", start_bar2: "", start_bodega: "", start_barroluco: "",
             purchases: "", sales: "", 
-            sold_bottles: "", sold_shots: "",
+            sold_bottles: "", sold_shots: "", sold_comps: "",
             barcode: ""
         });
 
@@ -507,7 +531,7 @@
                 };
                 const loadLocal = () => {
                     try {
-                        const saved = localStorage.getItem('bar-inventory-final-v21');
+                        const saved = localStorage.getItem('bar-inventory-final-v23');
                         if (saved) setData(JSON.parse(saved));
                     } catch(e) {}
                     setLoading(false);
@@ -515,9 +539,10 @@
                 initApp();
             }, []);
 
+            // --- CSV FIX HERE ---
             const downloadReport = () => {
                 const safeDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                let csvContent = "PRODUCT,START STOCK,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,SOLD BOTTLES/CANS,SOLD SHOTS/BUCKETS,TOTAL SALES POS,DIFFERENCE\n";
+                let csvContent = "PRODUCT,START STOCK,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,SOLD BOTTLES/CANS,SOLD SHOTS/BUCKETS,COMPS,TOTAL SALES POS,DIFFERENCE\n";
                 
                 data.forEach(cat => {
                     cat.items.forEach(item => {
@@ -536,6 +561,7 @@
                             systemConsumption.toFixed(2),
                             item.sold_bottles || 0,
                             item.sold_shots || 0,
+                            item.sold_comps || 0, 
                             sales.toFixed(2),
                             diff.toFixed(2)
                         ].join(",");
@@ -564,7 +590,7 @@
                         fb.setDoc(fb.doc(db, 'inventory', 'master'), { items: newData });
                     } catch (e) {}
                 } else {
-                    localStorage.setItem('bar-inventory-final-v21', JSON.stringify(newData));
+                    localStorage.setItem('bar-inventory-final-v23', JSON.stringify(newData));
                 }
             };
 
@@ -616,7 +642,7 @@
                             items: cat.items.map(item => ({
                                 ...item,
                                 start_bar1: item.bar1 || 0, start_bar2: item.bar2 || 0, start_bodega: item.bodega || 0, start_barroluco: item.barroluco || 0,
-                                bar1: "", bar2: "", bodega: "", barroluco: "", purchases: "", sales: "", sold_bottles: "", sold_shots: ""
+                                bar1: "", bar2: "", bodega: "", barroluco: "", purchases: "", sales: "", sold_bottles: "", sold_shots: "", sold_comps: ""
                             }))
                         }));
                         saveData(newData);
@@ -748,7 +774,7 @@
                                                 onLinkBarcode={linkBarcodeToItem} 
                                                 pendingBarcode={pendingBarcode}
                                                 isWells={cat.category.includes("Wells")}
-                                                categoryName={cat.category} // Pass category name for unit detection
+                                                categoryName={cat.category}
                                             />
                                         ))}
                                     </div>
