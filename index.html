@@ -15,25 +15,26 @@
     <!-- 3. Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- 4. Scanner Library (Secure Load) -->
+    <!-- 4. Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
-        /* Dark Theme Global */
-        body { background-color: #020617; color: #e2e8f0; font-family: sans-serif; }
+        /* DARK THEME GLOBAL */
+        body { background-color: #020617; color: #f8fafc; font-family: sans-serif; }
         .animate-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        /* Scanner Fixes */
+        /* Scanner */
         #reader { border: none !important; }
         #reader video { border-radius: 12px; object-fit: cover; width: 100% !important; }
-        #reader__scan_region { background: white; }
     </style>
 </head>
 <body>
@@ -44,7 +45,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // Expose to window
         window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, getAuth, signInAnonymously, onAuthStateChanged };
     </script>
 
@@ -52,7 +52,7 @@
         const { useState, useEffect, useMemo, useRef, Component } = React;
 
         // ==========================================
-        // 🔑 CONFIGURACIÓN FIREBASE (ACTIVA)
+        // 🔑 CONFIGURACIÓN FIREBASE
         // ==========================================
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyBbyENQwbbPzbwpxd9WIVIkaZP1zYkn8X4",
@@ -68,13 +68,7 @@
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
             render() {
-                if (this.state.hasError) return (
-                    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-red-400 p-6 text-center">
-                        <h2 className="text-2xl font-bold mb-2">Application Error</h2>
-                        <p className="mb-4">Something went wrong loading the interface.</p>
-                        <pre className="bg-black p-4 rounded text-xs text-left">{this.state.error?.toString()}</pre>
-                    </div>
-                );
+                if (this.state.hasError) return <div className="p-10 text-center text-red-400">Application Error. Reload Page.</div>;
                 return this.props.children;
             }
         }
@@ -139,39 +133,20 @@
             const scannerRef = useRef(null);
 
             useEffect(() => {
-                if (!window.Html5QrcodeScanner) {
-                    setScanError("Scanner library not loaded.");
-                    return;
-                }
+                if (!window.Html5QrcodeScanner) { setScanError("Lib not loaded"); return; }
                 const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
-                if (!isSecure) {
-                    setScanError("Camera requires HTTPS (GitHub Pages, etc.) to work.");
-                    return;
-                }
+                if (!isSecure) { setScanError("Camera requires HTTPS."); return; }
 
                 if (!scannerRef.current) {
                     try {
-                        const scanner = new Html5QrcodeScanner("reader", { 
-                            fps: 10, 
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.0 
-                        }, false);
-                        
+                        const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 }, false);
                         scannerRef.current = scanner;
                         scanner.render((decodedText) => {
                             scanner.clear().then(() => onScanSuccess(decodedText)).catch(console.error);
                         }, (error) => {});
-                    } catch(err) {
-                        console.error(err);
-                        setScanError("Could not start camera.");
-                    }
+                    } catch(err) { console.error(err); setScanError("Camera error."); }
                 }
-
-                return () => {
-                    if (scannerRef.current) {
-                        scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
-                    }
-                };
+                return () => { if (scannerRef.current) scannerRef.current.clear().catch(console.error); };
             }, []);
 
             return (
@@ -182,11 +157,7 @@
                     </div>
                     <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
                         {scanError ? (
-                            <div className="bg-red-900/50 border border-red-500 p-6 rounded-xl text-center max-w-sm">
-                                <Icons.AlertTriangle size={40} className="text-red-500 mx-auto mb-3" />
-                                <h3 className="text-white font-bold text-lg mb-2">Camera Error</h3>
-                                <p className="text-gray-300 text-sm">{scanError}</p>
-                            </div>
+                            <div className="bg-red-900/50 border border-red-500 p-6 rounded-xl text-center max-w-sm text-red-200">{scanError}</div>
                         ) : (
                             <div id="reader" className="w-full max-w-sm bg-black rounded-xl overflow-hidden border-2 border-indigo-500/50 shadow-2xl"></div>
                         )}
@@ -218,9 +189,7 @@
             return (
                 <div className="fixed inset-0 bg-black/90 flex flex-col z-50 backdrop-blur-sm animate-in overflow-hidden">
                     <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Icons.BarChart className="text-amber-500" /> Sales vs. Consumption Analysis
-                        </h2>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icons.BarChart className="text-amber-500" /> Analysis</h2>
                         <button onClick={onClose} className="p-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700">Close</button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -229,23 +198,20 @@
                             const maxValue = Math.max(item.systemConsumption, item.sales, 1); 
                             const consumePercent = Math.min((item.systemConsumption / maxValue) * 100, 100);
                             const salesPercent = Math.min((item.sales / maxValue) * 100, 100);
-                            
                             return (
                                 <div key={item.id} className="bg-gray-800 border border-gray-700 p-4 rounded-xl">
                                     <div className="flex justify-between mb-2">
                                         <span className="font-bold text-white">{item.name}</span>
-                                        <span className={`font-mono font-bold ${item.diff < 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                                            Diff: {item.diff > 0 ? '+' : ''}{item.diff.toFixed(2)}
-                                        </span>
+                                        <span className={`font-mono font-bold ${item.diff < 0 ? 'text-red-400' : 'text-blue-400'}`}>Diff: {item.diff.toFixed(2)}</span>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden flex items-center">
-                                            <div style={{ width: `${consumePercent}%` }} className="h-full bg-gray-600 transition-all duration-500"></div>
-                                            <span className="absolute left-2 text-xs font-bold text-white drop-shadow-md">Consumed: {item.systemConsumption.toFixed(1)}</span>
+                                            <div style={{ width: `${consumePercent}%` }} className="h-full bg-gray-600"></div>
+                                            <span className="absolute left-2 text-xs font-bold text-white">Consumed: {item.systemConsumption.toFixed(1)}</span>
                                         </div>
                                         <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden flex items-center">
-                                            <div style={{ width: `${salesPercent}%` }} className={`h-full transition-all duration-500 ${item.diff < 0 ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                                            <span className="absolute left-2 text-xs font-bold text-white drop-shadow-md">Sold: {item.sales.toFixed(1)}</span>
+                                            <div style={{ width: `${salesPercent}%` }} className={`h-full ${item.diff < 0 ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                            <span className="absolute left-2 text-xs font-bold text-white">Sold: {item.sales.toFixed(1)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -257,73 +223,78 @@
         };
 
         const Header = ({ onNewPeriod, onClearAll, onDownload, onShowCharts, onBackup, onRestore, isCloud, onScan }) => (
-            <header className="bg-black/90 border-b border-gray-800 text-white p-4 sticky top-0 z-30 shadow-2xl backdrop-blur-md">
+            <header className="bg-slate-900 border-b border-slate-800 text-white p-4 sticky top-0 z-30 shadow-xl">
                 <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3 w-full lg:w-auto">
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-amber-500">
-                            <Icons.Beer size={24} />
-                        </div>
+                        <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg"><Icons.Beer size={24} /></div>
                         <div>
-                            <h1 className="font-bold text-lg leading-tight text-gray-100">Master Bar Control Palmas</h1>
+                            <h1 className="font-bold text-lg leading-tight text-white">Master Bar Control Palmas</h1>
                             <div className="flex items-center gap-2 text-xs">
-                                <span className="text-gray-400">Sales Analysis</span>
-                                <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-300' : 'bg-gray-800 border-gray-600 text-gray-400'} flex items-center gap-1 transition-colors`}>
+                                <span className="text-slate-400">Sales Analysis</span>
+                                <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-slate-800 border-slate-600 text-slate-400'} flex items-center gap-1 transition-colors`}>
                                     {isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}
-                                    {isCloud ? 'Cloud Sync' : 'Local Device'}
+                                    {isCloud ? 'Cloud' : 'Local'}
                                 </span>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto">
-                        <button onClick={onScan} className="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 px-3 py-2 rounded-lg font-medium transition-all border border-indigo-500/30 text-sm">
-                            <Icons.Scan size={18} />
+                        <button onClick={onScan} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-medium border border-slate-700 text-sm shadow-sm">
+                            <Icons.Scan size={18} className="text-indigo-400" />
                             Scan
                         </button>
                         {!isCloud && (
-                            <div className="flex gap-2 mr-2 pr-2 border-r border-gray-700">
-                                <button onClick={onBackup} className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm border border-gray-600 transition-all" title="Backup">
-                                    <Icons.Save size={16} className="text-amber-400" />
-                                </button>
-                                <button onClick={onRestore} className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm border border-gray-600 transition-all" title="Restore">
-                                    <Icons.Upload size={16} className="text-blue-400" />
-                                </button>
+                            <div className="flex gap-2 mr-2 pr-2 border-r border-slate-700">
+                                <button onClick={onBackup} className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-sm border border-slate-700 transition-all" title="Backup"><Icons.Save size={16} /></button>
+                                <button onClick={onRestore} className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-sm border border-slate-700 transition-all" title="Restore"><Icons.Upload size={16} /></button>
                             </div>
                         )}
-                        <button onClick={onShowCharts} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-medium border border-gray-600 text-sm"><Icons.BarChart size={18}/></button>
-                        <button onClick={onNewPeriod} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-indigo-900/20 active:scale-95 text-sm"><Icons.ArrowRight size={18}/> Next</button>
-                        <button onClick={onDownload} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 active:scale-95 text-sm"><Icons.Download size={18}/> CSV</button>
-                        <button onClick={onClearAll} className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg border border-red-900/30"><Icons.Trash size={20}/></button>
+                        <button onClick={onShowCharts} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-medium border border-slate-700 text-sm shadow-sm">
+                            <Icons.BarChart size={18} className="text-indigo-400" /></button>
+                        <button onClick={onNewPeriod} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-indigo-900/20 active:scale-95 text-sm border border-indigo-500">
+                            <Icons.ArrowRight size={18} />
+                            Next
+                        </button>
+                        <button onClick={onDownload} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 active:scale-95 text-sm border border-emerald-500">
+                            <Icons.Download size={18} />
+                            CSV
+                        </button>
+                        <button onClick={onClearAll} className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg border border-red-200 transition-colors"><Icons.Trash size={20}/></button>
                     </div>
                 </div>
             </header>
         );
 
         const CategoryHeader = ({ title, icon: Icon, isOpen, toggle }) => (
-            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-gray-800/80 border border-gray-700/50 hover:bg-gray-800 rounded-xl shadow-lg mb-2 transition-all sticky top-[88px] z-20 backdrop-blur-sm group">
+            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-xl shadow-lg mb-2 transition-all sticky top-[88px] z-20 group">
                 <div className="flex items-center gap-3">
-                    <div className="text-amber-500 group-hover:text-amber-400 transition-colors"><Icon size={20} /></div>
-                    <h2 className="font-bold text-gray-200 text-lg group-hover:text-white transition-colors">{title}</h2>
+                    <div className="text-indigo-400 group-hover:text-indigo-300 transition-colors"><Icon size={20} /></div>
+                    <h2 className="font-bold text-slate-200 text-lg group-hover:text-white transition-colors">{title}</h2>
                 </div>
-                {isOpen ? <Icons.ChevronUp className="text-gray-500" /> : <Icons.ChevronDown className="text-gray-500" />}
+                {isOpen ? <Icons.ChevronUp className="text-slate-500" /> : <Icons.ChevronDown className="text-slate-500" />}
             </button>
         );
 
-        const InputField = ({ label, value, onChange, colorClass = "border-gray-700", icon: Icon }) => (
+        const InputField = ({ label, value, onChange, colorClass = "border-slate-700", icon: Icon }) => (
             <div className="relative group">
-                <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1 flex items-center gap-1 group-hover:text-gray-400 transition-colors">
+                <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1 flex items-center gap-1 group-hover:text-indigo-400 transition-colors">
                     {Icon && <Icon size={10} />} {label}
                 </label>
                 <input 
                     type="number" step="0.1" placeholder="-" value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className={`w-full bg-gray-900/50 border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500 transition-all ${colorClass} ${value !== "" && value !== 0 ? 'text-amber-400 font-bold bg-gray-900 border-amber-900/30' : 'text-gray-500'}`}
+                    className={`w-full bg-slate-900 border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all ${colorClass} ${value !== "" && value !== 0 ? 'text-indigo-300 font-bold border-indigo-500/50 bg-indigo-900/20' : 'text-slate-500'}`}
                 />
             </div>
         );
 
-        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode }) => {
+        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName }) => {
             const [isExpanded, setIsExpanded] = useState(false);
+            const [shotsInput, setShotsInput] = useState(""); 
             
+            // Detect if this is a unit-based category (Beers, Seltzers)
+            const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer");
+
             const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
             const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
             const purchases = parseFloat(item.purchases) || 0;
@@ -334,38 +305,59 @@
             const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
             const hasBarcode = !!item.barcode;
 
-            let statusColor = "bg-gray-800 border-gray-700"; 
-            let badgeClass = "text-gray-400 bg-gray-900 border border-gray-700";
+            // --- SHOT CALCULATOR LOGIC ---
+            const bottleSizeOz = isWells ? 33.814 : 25.36;
+            const shotsPerBottle = bottleSizeOz / 1.2; 
+
+            const handleSalesChange = (type, val) => {
+                let newBottles = type === 'bottles' ? val : (item.sold_bottles || "");
+                let newShots = type === 'shots' ? val : (item.sold_shots || "");
+                const b = parseFloat(newBottles) || 0;
+                const s = parseFloat(newShots) || 0;
+                
+                const shotsInBottles = (s * 1.2) / bottleSizeOz;
+                const totalSales = b + shotsInBottles;
+                const formattedSales = totalSales > 0 ? totalSales.toFixed(2) : "";
+
+                onUpdate(item.id, {
+                    sold_bottles: newBottles,
+                    sold_shots: newShots,
+                    sales: formattedSales
+                });
+            };
+
+            let statusColor = "bg-slate-800 border-slate-700"; 
+            let badgeClass = "text-slate-400 bg-slate-900 border border-slate-700";
             if (hasPhysical && hasStart) {
-                if (diff < -0.1) { statusColor = "bg-gray-800 border-red-900/50 shadow-[inset_4px_0_0_0_#ef4444]"; badgeClass = "text-red-400 bg-red-950/30 border border-red-900/50"; }
-                else if (diff > 0.1) { statusColor = "bg-gray-800 border-blue-900/50 shadow-[inset_4px_0_0_0_#3b82f6]"; badgeClass = "text-blue-400 bg-blue-950/30 border border-blue-900/50"; }
-                else { statusColor = "bg-gray-800 border-emerald-900/50 shadow-[inset_4px_0_0_0_#10b981]"; badgeClass = "text-emerald-400 bg-emerald-950/30 border border-emerald-900/50"; }
+                if (diff < -0.1) { statusColor = "bg-slate-800 border-red-500/50 shadow-[inset_4px_0_0_0_#ef4444]"; badgeClass = "text-red-400 bg-red-900/20 border border-red-500/30"; }
+                else if (diff > 0.1) { statusColor = "bg-slate-800 border-blue-500/50 shadow-[inset_4px_0_0_0_#3b82f6]"; badgeClass = "text-blue-400 bg-blue-900/20 border border-blue-500/30"; }
+                else { statusColor = "bg-slate-800 border-emerald-500/50 shadow-[inset_4px_0_0_0_#10b981]"; badgeClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/30"; }
             }
 
             return (
                 <div className={`rounded-xl border shadow-lg transition-all duration-300 overflow-hidden ${statusColor} mb-3`}>
-                    <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+                    <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-700/30 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-200 text-base">{item.name}</span>
-                                {hasBarcode && <Icons.Barcode size={14} className="text-gray-500" />}
+                                <span className="font-bold text-slate-200 text-base">{item.name}</span>
+                                {hasBarcode && <Icons.Barcode size={14} className="text-slate-500" />}
                                 {pendingBarcode && (
                                     <button onClick={(e) => { e.stopPropagation(); onLinkBarcode(item.id); }} className="ml-2 text-xs bg-indigo-600 text-white px-2 py-1 rounded-full animate-pulse hover:bg-indigo-500">Link [{pendingBarcode}]</button>
                                 )}
                                 {(hasPhysical && hasStart) ? <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span> : null}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1 flex gap-3 font-mono">
-                                <span>On Hand: <b>{totalStart}</b></span>
-                                <span className="text-gray-600">|</span>
-                                <span>Physical: <b>{totalPhys}</b></span>
+                            <div className="text-xs text-slate-500 mt-1 flex gap-3 font-mono">
+                                <span>On Hand: <b className="text-slate-300">{totalStart}</b></span>
+                                <span className="text-slate-600">|</span>
+                                <span>Physical: <b className="text-slate-300">{totalPhys}</b></span>
                             </div>
                         </div>
-                        <div>{isExpanded ? <Icons.ChevronUp className="text-gray-500" /> : <Icons.ChevronDown className="text-gray-600" />}</div>
+                        <div>{isExpanded ? <Icons.ChevronUp className="text-slate-500" /> : <Icons.ChevronDown className="text-slate-500" />}</div>
                     </div>
                     {isExpanded && (
-                        <div className="p-4 border-t border-gray-700/50 bg-black/20 space-y-4 animate-in">
-                            <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
-                                <div className="flex items-center gap-2 mb-3 text-gray-300 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div>
+                        <div className="p-4 border-t border-slate-700/50 bg-black/20 space-y-4 animate-in">
+                            <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                                <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div>
                                 <div className="grid grid-cols-4 gap-2">
                                     <InputField label="Bar 1" value={item.start_bar1} onChange={(v) => onUpdate(item.id, 'start_bar1', v)} colorClass="border-gray-700 focus:border-amber-500" />
                                     <InputField label="Bar 2" value={item.start_bar2} onChange={(v) => onUpdate(item.id, 'start_bar2', v)} colorClass="border-gray-700 focus:border-amber-500" />
@@ -374,12 +366,12 @@
                                 </div>
                                 <div className="text-right mt-2 text-xs font-bold text-amber-500/80">Total: {totalStart}</div>
                             </div>
-                            <div className="bg-gray-900/30 p-3 rounded-lg border border-gray-700/30">
+                            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                                 <div className="grid grid-cols-1 gap-3">
                                     <InputField label="2. Purchases (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" />
                                 </div>
                             </div>
-                            <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                            <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
                                 <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.MapPin size={12} /> 3. Physical Count (End)</div>
                                 <div className="grid grid-cols-4 gap-2">
                                     <InputField label="Bar 1" value={item.bar1} onChange={(v) => onUpdate(item.id, 'bar1', v)} colorClass="border-gray-700 focus:border-indigo-500" />
@@ -389,11 +381,68 @@
                                 </div>
                                 <div className="text-right mt-2 text-xs font-bold text-indigo-400">Total: {totalPhys}</div>
                             </div>
+                            
                             <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20">
-                                <div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Results</div>
-                                <div className="grid grid-cols-1 gap-3">
-                                    <InputField label="Total Sales POS" value={item.sales} onChange={(v) => onUpdate(item.id, 'sales', v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" />
-                                </div>
+                                <div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Sales Calculator (POS)</div>
+                                
+                                {isUnitBased ? (
+                                    /* SMART CALCULATOR: BEERS & SELTZERS (SIMPLE UNITS) */
+                                    <div className="grid grid-cols-1 gap-3 mb-2">
+                                        <div className="relative group">
+                                            <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Cans / Units Sold</label>
+                                            <input 
+                                                type="number" 
+                                                step="1" 
+                                                placeholder="0" 
+                                                value={item.sales || ""} 
+                                                onChange={(e) => onUpdate(item.id, 'sales', e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* SMART CALCULATOR: LIQUOR (BOTTLES + SHOTS) */
+                                    <>
+                                        <div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10">
+                                            <div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">
+                                                Shot Calculator (1.2oz @ {isWells ? '1L' : '750ml'})
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 mb-2">
+                                                <div className="relative group">
+                                                    <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Bottles</label>
+                                                    <input 
+                                                        type="number" 
+                                                        step="1" 
+                                                        placeholder="0" 
+                                                        value={item.sold_bottles || ""} 
+                                                        onChange={(e) => handleSalesChange('bottles', e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                                    />
+                                                </div>
+                                                <div className="relative group">
+                                                    <label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">Shots</label>
+                                                    <input 
+                                                        type="number" 
+                                                        step="1" 
+                                                        placeholder="0" 
+                                                        value={item.sold_shots || ""} 
+                                                        onChange={(e) => handleSalesChange('shots', e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="text-[9px] text-gray-500 mt-1">
+                                                Auto-updates Sales. (1 Bottle = {shotsPerBottle.toFixed(2)} Shots)
+                                            </div>
+                                        </div>
+                                        {/* Hidden calc field for Liquor (read only for clarity) */}
+                                        <div className="bg-slate-900/50 rounded p-2 flex justify-between items-center border border-slate-700/50">
+                                            <span className="text-xs text-gray-400">Total Sales (Calculated):</span>
+                                            <span className="font-mono font-bold text-amber-400 text-lg">{item.sales || "0"}</span>
+                                        </div>
+                                    </>
+                                )}
+                                
                                 <div className="text-right mt-4 text-xs text-gray-400 font-mono space-y-2">
                                     <div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div>
                                     <div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div>
@@ -409,7 +458,9 @@
             id, name,
             bar1: "", bar2: "", bodega: "", barroluco: "",
             start_bar1: "", start_bar2: "", start_bodega: "", start_barroluco: "",
-            purchases: "", sales: "", barcode: ""
+            purchases: "", sales: "", 
+            sold_bottles: "", sold_shots: "",
+            barcode: ""
         });
 
         const INITIAL_DATA = [
@@ -446,56 +497,72 @@
                             const app = fb.initializeApp(FIREBASE_CONFIG);
                             const auth = fb.getAuth(app);
                             const db = fb.getFirestore(app);
-                            
-                            try {
-                                await fb.signInAnonymously(auth);
-                            } catch (authError) {
-                                console.error("Auth failed:", authError);
-                                // Fallback to local if auth fails (e.g. quota exceeded or not enabled)
-                                throw new Error("Auth failed"); 
-                            }
-                            
+                            try { await fb.signInAnonymously(auth); } catch (authError) { throw new Error("Auth failed"); }
                             fb.onAuthStateChanged(auth, (u) => {
                                 setUser(u);
                                 if (u) {
                                     setIsCloud(true);
-                                    setIsConfigured(true);
                                     const docRef = fb.doc(db, 'inventory', 'master');
                                     fb.onSnapshot(docRef, (docSnap) => {
                                         if (docSnap.exists()) setData(docSnap.data().items);
-                                        else {
-                                            fb.setDoc(docRef, { items: INITIAL_DATA });
-                                            setData(INITIAL_DATA);
-                                        }
+                                        else { fb.setDoc(docRef, { items: INITIAL_DATA }); setData(INITIAL_DATA); }
                                         setLoading(false);
-                                    }, (err) => {
-                                         console.error("Snapshot error:", err);
-                                         setIsCloud(false);
-                                         loadLocal();
-                                    });
+                                    }, (err) => { setIsCloud(false); loadLocal(); });
                                 }
                             });
-                        } catch (e) { 
-                            console.error("Firebase Init Failed", e); 
-                            setIsCloud(false); 
-                            // Notification removed as requested to keep UI clean
-                            loadLocal(); 
-                        }
-                    } else {
-                        setIsCloud(false);
-                        setIsConfigured(false);
-                        loadLocal();
-                    }
+                        } catch (e) { setIsCloud(false); loadLocal(); }
+                    } else { setIsCloud(false); loadLocal(); }
                 };
                 const loadLocal = () => {
                     try {
-                        const saved = localStorage.getItem('bar-inventory-final-v14');
+                        const saved = localStorage.getItem('bar-inventory-final-v20');
                         if (saved) setData(JSON.parse(saved));
                     } catch(e) {}
                     setLoading(false);
                 };
                 initApp();
             }, []);
+
+            // --- CSV FIX HERE ---
+            const downloadReport = () => {
+                const safeDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                let csvContent = "PRODUCT,START STOCK,TOTAL PHYSICAL,PURCHASES,SYSTEM SALES,SOLD BOTTLES,SOLD SHOTS,TOTAL SALES POS,DIFFERENCE\n";
+                
+                data.forEach(cat => {
+                    cat.items.forEach(item => {
+                        const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
+                        const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
+                        const purchases = parseFloat(item.purchases)||0;
+                        const sales = parseFloat(item.sales)||0;
+                        const systemConsumption = totalStart + purchases - totalPhys;
+                        const diff = sales - systemConsumption;
+
+                        const row = [
+                            `"${item.name}"`,
+                            totalStart,
+                            totalPhys,
+                            purchases,
+                            systemConsumption.toFixed(2),
+                            item.sold_bottles || 0,
+                            item.sold_shots || 0,
+                            sales.toFixed(2),
+                            diff.toFixed(2)
+                        ].join(",");
+                        
+                        csvContent += row + "\n";
+                    });
+                });
+
+                const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute("download", `Bar_Report_${safeDate}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showNotification("Report downloaded!");
+            };
 
             const saveData = (newData) => {
                 setData(newData);
@@ -506,7 +573,7 @@
                         fb.setDoc(fb.doc(db, 'inventory', 'master'), { items: newData });
                     } catch (e) {}
                 } else {
-                    localStorage.setItem('bar-inventory-final-v14', JSON.stringify(newData));
+                    localStorage.setItem('bar-inventory-final-v20', JSON.stringify(newData));
                 }
             };
 
@@ -558,7 +625,7 @@
                             items: cat.items.map(item => ({
                                 ...item,
                                 start_bar1: item.bar1 || 0, start_bar2: item.bar2 || 0, start_bodega: item.bodega || 0, start_barroluco: item.barroluco || 0,
-                                bar1: "", bar2: "", bodega: "", barroluco: "", purchases: "", sales: ""
+                                bar1: "", bar2: "", bodega: "", barroluco: "", purchases: "", sales: "", sold_bottles: "", sold_shots: ""
                             }))
                         }));
                         saveData(newData);
@@ -609,10 +676,18 @@
                 e.target.value = null;
             };
 
-            const updateItem = (itemId, field, value) => {
+            const updateItem = (itemId, fieldOrObj, value) => {
                 const newData = data.map(cat => ({
                     ...cat,
-                    items: cat.items.map(item => item.id === itemId ? { ...item, [field]: value } : item)
+                    items: cat.items.map(item => {
+                        if (item.id === itemId) {
+                            if (typeof fieldOrObj === 'object' && fieldOrObj !== null) {
+                                return { ...item, ...fieldOrObj };
+                            }
+                            return { ...item, [fieldOrObj]: value };
+                        }
+                        return item;
+                    })
                 }));
                 saveData(newData);
             };
@@ -635,14 +710,14 @@
                 return Icons.RefreshCw;
             };
 
-            if (loading) return <div className="flex items-center justify-center min-h-screen text-white">Loading...</div>;
+            if (loading) return <div className="flex items-center justify-center min-h-screen text-slate-500">Loading...</div>;
 
             return (
-                <div className="min-h-screen bg-slate-50 font-sans pb-20">
+                <div className="min-h-screen bg-slate-900 font-sans pb-20">
                     <Header 
                         onNewPeriod={confirmNewPeriod} 
                         onClearAll={confirmClearAll} 
-                        onDownload={() => alert("Download feature simplified for concise code.")} 
+                        onDownload={downloadReport} 
                         onShowCharts={() => setShowCharts(true)} 
                         onBackup={handleBackup} 
                         onRestore={() => fileInputRef.current.click()} 
@@ -653,29 +728,37 @@
                     <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".json" onChange={handleRestoreFile} />
                     
                     {pendingBarcode && (
-                        <div className="bg-indigo-900 p-4 text-center text-white border-b border-indigo-500 sticky top-[72px] z-40">
+                        <div className="bg-indigo-900 p-4 text-center text-white border-b border-indigo-700 sticky top-[72px] z-40 shadow-md">
                             <p className="font-bold">Barcode: {pendingBarcode}</p>
                             <p className="text-xs text-indigo-200">Find item below and click "Link"</p>
-                            <button onClick={() => setPendingBarcode(null)} className="mt-1 text-xs underline">Cancel</button>
+                            <button onClick={() => setPendingBarcode(null)} className="mt-1 text-xs underline hover:text-indigo-300">Cancel</button>
                         </div>
                     )}
 
-                    <div className="bg-gray-900 p-4 border-b border-gray-800 sticky top-[72px] z-20">
+                    <div className="bg-slate-950 p-4 border-b border-slate-800 sticky top-[72px] z-20 shadow-lg">
                         <div className="max-w-5xl mx-auto relative">
-                            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                            <input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-800 rounded-xl pl-10 pr-4 py-3 text-gray-200 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+                            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                            <input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-slate-900 rounded-xl pl-10 pr-4 py-3 text-slate-200 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-600" />
                         </div>
                     </div>
 
                     <main className="max-w-5xl mx-auto p-4 space-y-4">
-                        {filteredData.length === 0 && <div className="text-center py-20 text-gray-600"><p>No products found.</p></div>}
+                        {filteredData.length === 0 && <div className="text-center py-20 text-slate-500"><p>No products found.</p></div>}
                         {filteredData.map((cat) => (
                             <div key={cat.category} className="mb-6">
                                 {!searchTerm && <CategoryHeader title={cat.category} icon={getIcon(cat.category)} isOpen={openCategories[cat.category]} toggle={() => setOpenCategories(prev => ({...prev, [cat.category]: !prev[cat.category]}))} />}
                                 {(openCategories[cat.category] || searchTerm) && (
                                     <div className="grid gap-2 sm:grid-cols-1 lg:grid-cols-2">
                                         {cat.items.map(item => (
-                                            <InventoryRow key={item.id} item={item} onUpdate={updateItem} onLinkBarcode={linkBarcodeToItem} pendingBarcode={pendingBarcode} />
+                                            <InventoryRow 
+                                                key={item.id} 
+                                                item={item} 
+                                                onUpdate={updateItem} 
+                                                onLinkBarcode={linkBarcodeToItem} 
+                                                pendingBarcode={pendingBarcode}
+                                                isWells={cat.category.includes("Wells")}
+                                                categoryName={cat.category} // PASS CATEGORY NAME
+                                            />
                                         ))}
                                     </div>
                                 )}
@@ -687,7 +770,7 @@
                     {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {isScanning && <ScannerModal onScanSuccess={handleScanSuccess} onClose={() => setIsScanning(false)} />}
                     {notification && (
-                        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl border border-gray-700 flex items-center gap-3 animate-in z-50 whitespace-nowrap">
+                        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl border border-slate-700 flex items-center gap-3 animate-in z-50 whitespace-nowrap">
                             <Icons.CheckCircle size={18} className="text-emerald-400" />
                             <span className="font-medium text-sm">{notification}</span>
                         </div>
