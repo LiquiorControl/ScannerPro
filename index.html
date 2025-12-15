@@ -391,7 +391,7 @@
             </div>
         );
 
-        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName }) => {
+        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest }) => { // Added onScanRequest
             const [isExpanded, setIsExpanded] = useState(false);
             const [shotsInput, setShotsInput] = useState(""); 
             
@@ -463,10 +463,7 @@
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-slate-200 text-base">{item.name}</span>
-                                {hasBarcode && <Icons.Barcode size={14} className="text-slate-500" />}
-                                {pendingBarcode && (
-                                    <button onClick={(e) => { e.stopPropagation(); onLinkBarcode(item.id); }} className="ml-2 text-xs bg-indigo-600 text-white px-2 py-1 rounded-full animate-pulse hover:bg-indigo-500">Link [{pendingBarcode}]</button>
-                                )}
+                                {hasBarcode && <Icons.Barcode size={14} className="text-indigo-400" />}
                                 {(hasPhysical && hasStart) ? <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span> : null}
                             </div>
                             <div className="text-xs text-slate-500 mt-1 flex gap-3 font-mono">
@@ -479,6 +476,25 @@
                     </div>
                     {isExpanded && (
                         <div className="p-4 border-t border-slate-700/50 bg-black/20 space-y-4 animate-in">
+                            
+                            {/* NUEVO: BARCODE MANAGER SIMPLIFICADO */}
+                            <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-lg border border-slate-700/50 mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Icons.Barcode className="text-slate-400" size={16} />
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] uppercase text-slate-500 font-bold">Código de Barra</span>
+                                        <span className="text-xs font-mono text-slate-300">{item.barcode || "Sin vincular"}</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => onScanRequest(item.id)}
+                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-lg shadow-indigo-900/20 active:scale-95 transition-all"
+                                >
+                                    <Icons.Scan size={14} />
+                                    {item.barcode ? "Cambiar" : "Vincular"}
+                                </button>
+                            </div>
+
                             <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
                                 <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div>
                                 <div className="grid grid-cols-4 gap-2">
@@ -595,7 +611,7 @@
                 createItem("cer-1", "Pacifico"), createItem("cer-2", "Michelob Ultra"), createItem("cer-3", "Modelo Especial"), createItem("cer-5", "Corona"), createItem("cer-4", "Heineken")
             ]},
             { category: "Wines", items: [
-                createItem("vin-1", "Sangria"), createItem("vin-2", "Chardonnay El Enemigo")
+                createItem("vin-1", "Sangria"), createItem("vin-2", "Chardonnay El Enemigo"), createItem("vin-5", "Cafayate Malbec")
             ]}
         ];
 
@@ -606,9 +622,12 @@
             const [user, setUser] = useState(null);
             const fb = window.fb;
             const fileInputRef = useRef(null);
+            
+            // STATE FOR TARGETED SCANNING
+            const [scanningForItem, setScanningForItem] = useState(null);
 
             // Use v25 for local storage so we don't accidentally wipe existing data from previous versions.
-            const LOCAL_STORAGE_KEY = 'bar-inventory-final-v25'; 
+            const LOCAL_STORAGE_KEY = 'bar-inventory-final-v26'; 
 
             useEffect(() => {
                 const initApp = async () => {
@@ -710,6 +729,20 @@
 
             const handleScanSuccess = (decodedText) => {
                 setIsScanning(false);
+
+                // NUEVA LÓGICA: Si estamos vinculando un producto específico
+                if (scanningForItem) {
+                    const newData = data.map(cat => ({
+                        ...cat,
+                        items: cat.items.map(item => item.id === scanningForItem ? { ...item, barcode: decodedText } : item)
+                    }));
+                    saveData(newData);
+                    showNotification(`Código vinculado exitosamente!`);
+                    setScanningForItem(null);
+                    return;
+                }
+
+                // LÓGICA ANTIGUA: Escaneo general (Búsqueda)
                 let foundItem = null;
                 for (const cat of data) {
                     const match = cat.items.find(i => i.barcode === decodedText);
@@ -717,13 +750,21 @@
                 }
                 if (foundItem) {
                     setSearchTerm(foundItem.name);
-                    setPendingBarcode(null);
-                    showNotification(`Found: ${foundItem.name}`);
+                    // Open the category of the found item automatically
+                    data.forEach(cat => {
+                        if (cat.items.find(i => i.id === foundItem.id)) {
+                            setOpenCategories(prev => ({ ...prev, [cat.category]: true }));
+                        }
+                    });
+                    showNotification(`Encontrado: ${foundItem.name}`);
                 } else {
-                    setPendingBarcode(decodedText);
-                    setSearchTerm("");
-                    alert(`Barcode ${decodedText} unknown. Find item and click "Link".`);
+                    alert(`Producto no encontrado. Usa el botón "Vincular" dentro del producto para asignarlo.`);
                 }
+            };
+
+            const requestItemScan = (itemId) => {
+                setScanningForItem(itemId);
+                setIsScanning(true);
             };
 
             const linkBarcodeToItem = (itemId) => {
@@ -950,6 +991,7 @@
                                                 pendingBarcode={pendingBarcode}
                                                 isWells={cat.category.includes("Wells")}
                                                 categoryName={cat.category}
+                                                onScanRequest={requestItemScan} // Passed the new function
                                             />
                                         ))}
                                     </div>
@@ -961,7 +1003,24 @@
                     <ConfirmationModal isOpen={!!modalConfig} onClose={() => setModalConfig(null)} onConfirm={modalConfig?.onConfirm} title={modalConfig?.title} message={modalConfig?.message} isDestructive={modalConfig?.isDestructive} />
                     {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {showShopping && <ShoppingListModal isOpen={showShopping} onClose={() => setShowShopping(false)} items={shoppingItems} />}
-                    {isScanning && <ScannerModal onScanSuccess={handleScanSuccess} onClose={() => setIsScanning(false)} />}
+                    
+                    {/* MODAL SCANNER ACTUALIZADO */}
+                    {isScanning && (
+                        <ScannerModal 
+                            onScanSuccess={handleScanSuccess} 
+                            onClose={() => { setIsScanning(false); setScanningForItem(null); }} 
+                        />
+                    )}
+                    
+                    {/* Header para Scanner Específico */}
+                    {isScanning && scanningForItem && (
+                        <div className="fixed top-16 left-0 right-0 z-[60] text-center pointer-events-none">
+                            <span className="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg border border-indigo-400">
+                                Vinculando producto...
+                            </span>
+                        </div>
+                    )}
+
                     {notification && (
                         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl border border-slate-700 flex items-center gap-3 animate-in z-50 whitespace-nowrap">
                             <Icons.CheckCircle size={18} className="text-emerald-400" />
