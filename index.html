@@ -477,11 +477,13 @@
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto">
-                        <button onClick={onScan} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-medium border border-slate-700 text-sm shadow-sm">
-                            <Icons.Scan size={18} className="text-indigo-400" />
-                            Scan
+                    <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
+                        {/* BOTÓN SCAN MÁS GRANDE */}
+                        <button onClick={onScan} className="flex items-center gap-3 bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold border border-slate-600 text-lg shadow-lg hover:shadow-xl hover:border-indigo-500 transition-all active:scale-95 mr-2">
+                            <Icons.Scan size={24} className="text-indigo-400" />
+                            SCAN
                         </button>
+
                         {!isCloud && (
                             <div className="flex gap-2 mr-2 pr-2 border-r border-slate-700">
                                 <button onClick={onBackup} className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-sm border border-slate-700 transition-all" title="Backup"><Icons.Save size={16} /></button>
@@ -1063,11 +1065,31 @@
 
             const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
             
+            // --- BUSCADOR MEJORADO (ENCUENTRA TODO) ---
             const filteredData = useMemo(() => {
                 if (!searchTerm) return data;
+                
+                // Función para limpiar texto: minusculas, sin acentos
+                const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                
+                const term = normalize(searchTerm);
+                const tightTerm = term.replace(/\s+/g, ''); // Término sin espacios (ej: "redbull")
+
                 return data.map(cat => ({
                     ...cat,
-                    items: cat.items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                    items: cat.items.filter(item => {
+                        // 1. Busca en el Nombre del Producto (ej. "Corona")
+                        const nameMatch = normalize(item.name).includes(term);
+                        
+                        // 2. Busca en la Categoría (ej. busca "Tequila" -> muestra "Don Julio")
+                        const catMatch = normalize(cat.category).includes(term);
+
+                        // 3. Busca sin espacios (ej. busca "redbull" -> encuentra "Red Bull")
+                        const tightName = normalize(item.name).replace(/\s+/g, '');
+                        const tightMatch = tightName.includes(tightTerm);
+
+                        return nameMatch || catMatch || tightMatch;
+                    })
                 })).filter(cat => cat.items.length > 0);
             }, [data, searchTerm]);
 
