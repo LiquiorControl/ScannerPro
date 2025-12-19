@@ -22,10 +22,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* DARK THEME GLOBAL - Colores más profundos para mejor contraste */
+        /* DARK THEME GLOBAL */
         body { background-color: #0A0A0A; color: #f0f6fc; font-family: sans-serif; }
         .animate-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
@@ -39,7 +40,7 @@
         #reader { border: none !important; }
         #reader video { border-radius: 12px; object-fit: cover; width: 100% !important; }
         
-        /* Custom size h-21 w-21 (50% larger than h-14 w-14) */
+        /* Custom size h-21 w-21 */
         .h-21 { height: 5.25rem; } /* 84px */
         .w-21 { width: 5.25rem; } /* 84px */
     </style>
@@ -120,7 +121,6 @@
             "Cafayate Malbec": 6 
         };
 
-        // --- ERROR BOUNDARY ---
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -161,7 +161,8 @@
             Upload: (p) => <IconWrapper {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></IconWrapper>,
             Scan: (p) => <IconWrapper {...p}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="6" x="7" y="9" rx="1"/></IconWrapper>,
             Barcode: (p) => <IconWrapper {...p}><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></IconWrapper>,
-            ErrorIcon: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>
+            ErrorIcon: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></IconWrapper>,
+            Plus: (p) => <IconWrapper {...p}><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></IconWrapper>
         };
 
         // --- AUDIO HELPER ---
@@ -180,42 +181,19 @@
 
                 switch (type) {
                     case 'success':
-                        osc.type = "sine";
-                        osc.frequency.setValueAtTime(1200, now);
-                        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-                        gain.gain.setValueAtTime(0.1, now);
-                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        osc.start(now);
-                        osc.stop(now + 0.15);
+                        osc.type = "sine"; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                         break;
                     case 'error':
-                        osc.type = "square";
-                        osc.frequency.setValueAtTime(200, now);
-                        osc.frequency.linearRampToValueAtTime(100, now + 0.2);
-                        gain.gain.setValueAtTime(0.1, now);
-                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                        osc.start(now);
-                        osc.stop(now + 0.2);
+                        osc.type = "square"; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(100, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                         break;
                     case 'add':
-                        osc.type = "sine";
-                        osc.frequency.setValueAtTime(800, now);
-                        osc.frequency.linearRampToValueAtTime(1000, now + 0.1);
-                        gain.gain.setValueAtTime(0.08, now);
-                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        osc.start(now);
-                        osc.stop(now + 0.15);
+                        osc.type = "sine"; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                         break;
                     case 'sub':
-                        osc.type = "triangle";
-                        osc.frequency.setValueAtTime(400, now);
-                        osc.frequency.linearRampToValueAtTime(300, now + 0.1);
-                        gain.gain.setValueAtTime(0.08, now);
-                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        osc.start(now);
-                        osc.stop(now + 0.15);
+                        osc.type = "triangle"; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(300, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                         break;
                 }
+                osc.start(now); osc.stop(now + 0.2);
             } catch (e) { console.error("Audio play failed", e); }
         };
 
@@ -233,6 +211,54 @@
                         <div className="flex justify-end gap-3">
                             <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[#3A4048] text-[#f0f6fc]/80 hover:bg-[#4A5462] transition-colors border border-[#4A5462] font-medium">Cancel</button>
                             <button onClick={onConfirm} className={`px-4 py-2 rounded-lg text-white font-bold transition-colors shadow-lg ${isDestructive ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20'}`}>Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddProductModal = ({ isOpen, onClose, onAdd, categories }) => {
+            if (!isOpen) return null;
+            const [name, setName] = useState("");
+            const [category, setCategory] = useState(categories[0] || "");
+
+            const handleSubmit = () => {
+                if (!name.trim()) return;
+                onAdd(name, category);
+                setName("");
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-4">
+                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-md rounded-2xl shadow-2xl p-6">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icons.Plus className="text-indigo-400" /> Add New Product</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-[#f0f6fc]/60 font-bold uppercase mb-1">Product Name</label>
+                                <input 
+                                    type="text" 
+                                    value={name} 
+                                    onChange={(e) => setName(e.target.value)} 
+                                    className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 font-medium"
+                                    placeholder="e.g., Havana Club"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-[#f0f6fc]/60 font-bold uppercase mb-1">Category</label>
+                                <select 
+                                    value={category} 
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-indigo-500 appearance-none font-medium"
+                                >
+                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-[#3A4048] text-[#f0f6fc]/80 font-bold hover:bg-[#4A5462] transition-colors">Cancel</button>
+                            <button onClick={handleSubmit} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 transition-colors">Add Product</button>
                         </div>
                     </div>
                 </div>
@@ -348,7 +374,6 @@
                         const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 }, false);
                         scannerRef.current = scanner;
                         scanner.render((decodedText) => { 
-                            // Solo detenemos el escáner si llamamos al callback de éxito que decide cerrar el modal
                             onScanSuccess(decodedText, scanner);
                         }, (error) => {});
                     } catch(err) { console.error(err); setScanError("Camera error."); }
@@ -519,6 +544,8 @@
                         <div className="flex flex-col lg:items-end gap-2 w-full lg:w-auto">
                             <div className="text-indigo-300 font-bold uppercase text-xs tracking-widest mb-2 lg:mb-0 lg:mr-1 text-center lg:text-right">{dateStr}</div>
                             <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
+                                {/* Botón "+" eliminado de aquí */}
+                                
                                 <button onClick={onScan} className="flex items-center gap-3 bg-[#3A4048] hover:bg-[#4A5462] text-white px-6 py-3 rounded-xl font-bold border border-[#4A5462] text-lg shadow-lg hover:shadow-xl hover:border-indigo-500 transition-all active:scale-95 mr-2"><Icons.Scan size={24} className="text-indigo-400" /> SCAN</button>
                                 {!isCloud && (
                                     <div className="flex gap-2 mr-2 pr-2 border-r border-[#3A4048]">
@@ -572,13 +599,6 @@
             const bottleSizeOz = isWells ? 33.814 : 25.36;
             const shotsPerBottle = bottleSizeOz / 1.2; 
             
-            const checkBarcodeMatch = (decodedText, item) => {
-                if (item.barcode) {
-                    return item.barcode.split(',').some(code => code.trim() === decodedText);
-                }
-                return false;
-            };
-
             const displayBarcode = item.barcode ? item.barcode.split(',')[0].trim() : "Sin vincular";
 
             const handleSalesChange = (type, val) => {
@@ -738,8 +758,10 @@
             const fileInputRef = useRef(null);
             const [scanningForItem, setScanningForItem] = useState(null); 
             const [scanAttempt, setScanAttempt] = useState(0); 
-            const [isResetting, setIsResetting] = useState(false); // New state to handle camera reset pause
+            const [isResetting, setIsResetting] = useState(false);
             const LOCAL_STORAGE_KEY = 'bar-inventory-final-v26'; 
+
+            const [showAddProduct, setShowAddProduct] = useState(false);
 
             useEffect(() => {
                 const initApp = async () => {
@@ -850,7 +872,6 @@
             };
 
             const handleScanSuccess = (decodedText, scannerInstance) => {
-                // LÓGICA DE VINCULACIÓN (LINKING)
                 if (scanningForItem) {
                     playSound('success'); 
                     setIsScanning(false); 
@@ -881,7 +902,6 @@
                     return;
                 }
                 
-                // LÓGICA DE BÚSQUEDA (SEARCH)
                 let foundItem = null;
                 for (const cat of data) { 
                     const match = cat.items.find(i => checkBarcodeMatch(decodedText, i)); 
@@ -894,15 +914,11 @@
                     setQuickScanItemId(foundItem.id); 
                     showNotification(`Abriendo: ${foundItem.name}`); 
                 } else { 
-                    // No encontrado: Notificar y resetear la cámara con pausa
                     playSound('error');
                     showNotification(`Código ${decodedText} no reconocido`);
                     
-                    // Iniciamos el ciclo de reset seguro
-                    setIsResetting(true); // Oculta el modal (unmount)
-                    setTimeout(() => {
-                        setIsResetting(false); // Vuelve a mostrar el modal (mount) tras 500ms
-                    }, 500);
+                    setIsResetting(true); 
+                    setTimeout(() => { setIsResetting(false); }, 500);
                 }
             };
 
@@ -951,6 +967,19 @@
             const handleLogoChange = (e) => { const file = e.target.files[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { alert("Image too large. Please use an image under 2MB."); return; } const reader = new FileReader(); reader.onload = (ev) => { const base64 = ev.target.result; setLogo(base64); localStorage.setItem('BAR_LOGO', base64); showNotification("Logo Updated!"); }; reader.readAsDataURL(file); };
             const updateItem = (itemId, fieldOrObj, value) => { const newData = data.map(cat => ({ ...cat, items: cat.items.map(item => { if (item.id === itemId) { if (typeof fieldOrObj === 'object' && fieldOrObj !== null) return { ...item, ...fieldOrObj }; return { ...item, [fieldOrObj]: value }; } return item; }) })); saveData(newData); };
             const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
+
+            const handleAddNewProduct = (name, category) => {
+                const newId = `custom-${Date.now()}`;
+                const newItem = createItem(newId, name);
+                const newData = data.map(cat => {
+                    if (cat.category === category) {
+                        return { ...cat, items: [...cat.items, newItem] };
+                    }
+                    return cat;
+                });
+                saveData(newData);
+                showNotification(`Added: ${name}`);
+            };
             
             const filteredData = useMemo(() => {
                 if (!searchTerm) return data;
@@ -968,7 +997,20 @@
             return (
                 <div className="min-h-screen bg-[#0A0A0A] font-sans pb-20">
                     <div className="fixed top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]">
-                        <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onScan={() => { setIsScanning(true); setScanAttempt(0); }} onShopping={generateShoppingList} logoSrc={logo} onLogoUpload={handleLogoChange} />
+                        <Header 
+                            onNewPeriod={confirmNewPeriod} 
+                            onClearAll={confirmClearAll} 
+                            onDownload={downloadReport} 
+                            onShowCharts={() => setShowCharts(true)} 
+                            onBackup={handleBackup} 
+                            onRestore={() => fileInputRef.current.click()} 
+                            isCloud={isCloud} 
+                            onScan={() => { setIsScanning(true); setScanAttempt(0); }} 
+                            onShopping={generateShoppingList} 
+                            logoSrc={logo} 
+                            onLogoUpload={handleLogoChange}
+                            onAddProduct={() => setShowAddProduct(true)}
+                        />
                         <div className="bg-[#0A0A0A] p-4 border-b border-[#3A4048]">
                             <div className="max-w-5xl mx-auto relative"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={20} /><input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" /></div>
                         </div>
@@ -988,11 +1030,21 @@
                             </div>
                         ))}
                     </main>
+                    
+                    {/* FLOATING ACTION BUTTON FOR ADD */}
+                    <button 
+                        onClick={() => setShowAddProduct(true)}
+                        className="fixed bottom-6 right-6 z-40 bg-indigo-600 text-white p-4 rounded-full shadow-2xl hover:bg-indigo-500 transition-transform active:scale-95 border border-indigo-400 group"
+                        title="Add New Product"
+                    >
+                        <Icons.Plus size={28} />
+                    </button>
+
                     <ConfirmationModal isOpen={!!modalConfig} onClose={() => setModalConfig(null)} onConfirm={modalConfig?.onConfirm} title={modalConfig?.title} message={modalConfig?.message} isDestructive={modalConfig?.isDestructive} />
+                    <AddProductModal isOpen={showAddProduct} onClose={() => setShowAddProduct(false)} onAdd={handleAddNewProduct} categories={data.map(c => c.category)} />
                     {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {showShopping && <ShoppingListModal isOpen={showShopping} onClose={() => setShowShopping(false)} items={shoppingItems} />}
                     
-                    {/* MODAL DEL ESCÁNER CON LÓGICA DE RESETEO SEGURO */}
                     {isScanning && !isResetting && (
                         <ScannerModal 
                             key={scanAttempt}
