@@ -586,7 +586,7 @@
             </div>
         );
 
-        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest }) => {
+        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest, onDelete }) => {
             const [isExpanded, setIsExpanded] = useState(false);
             const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer");
             const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
@@ -713,6 +713,16 @@
                                     <div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div>
                                     <div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div>
                                 </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-4 border-t border-[#3A4048]/50 mt-2">
+                                <div className="text-[9px] text-[#f0f6fc]/30 font-mono">ID: {item.id}</div>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+                                    className="flex items-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 hover:text-red-400 border border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                >
+                                    <Icons.Trash size={14} /> Delete
+                                </button>
                             </div>
                         </div>
                     )}
@@ -929,6 +939,23 @@
 
             const requestItemScan = (itemId, type = 'unit') => { setScanningForItem({ id: itemId, type }); setIsScanning(true); };
 
+            const handleDeleteProduct = (item) => {
+                setModalConfig({
+                    title: "Delete Item?",
+                    message: `Permanently remove "${item.name}" from the inventory list?`,
+                    isDestructive: true,
+                    onConfirm: () => {
+                        const newData = data.map(cat => ({
+                            ...cat,
+                            items: cat.items.filter(i => i.id !== item.id)
+                        }));
+                        saveData(newData);
+                        setModalConfig(null);
+                        showNotification(`Deleted: ${item.name}`);
+                    }
+                });
+            };
+
             const generateShoppingList = () => {
                 const toBuy = [];
                 data.forEach(cat => {
@@ -1056,7 +1083,7 @@
                                 {!searchTerm && <CategoryHeader title={cat.category} icon={getIcon(cat.category)} isOpen={openCategories[cat.category]} toggle={() => setOpenCategories(prev => ({...prev, [cat.category]: !prev[cat.category]}))} />}
                                 {(openCategories[cat.category] || searchTerm) && (
                                     <div className="grid gap-2 sm:grid-cols-1 lg:grid-cols-2">
-                                        {cat.items.map(item => (<InventoryRow key={item.id} item={item} onUpdate={updateItem} pendingBarcode={pendingBarcode} isWells={cat.category.includes("Wells")} categoryName={cat.category} onScanRequest={requestItemScan} />))}
+                                        {cat.items.map(item => (<InventoryRow key={item.id} item={item} onUpdate={updateItem} pendingBarcode={pendingBarcode} isWells={cat.category.includes("Wells")} categoryName={cat.category} onScanRequest={requestItemScan} onDelete={handleDeleteProduct} />))}
                                     </div>
                                 )}
                             </div>
