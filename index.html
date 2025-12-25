@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,10 +18,10 @@
     <!-- 4. Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <!-- 5. Chart.js (Essential for the Pie Chart) -->
+    <!-- 5. Chart.js (Esencial para el gráfico circular) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 6. jsPDF & AutoTable (For PDF Generation) -->
+    <!-- 6. jsPDF & AutoTable (Para generación de PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
@@ -37,7 +37,7 @@
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(29, 31, 35, 0.5); }
-        ::-webkit-webkit-scrollbar-thumb { background: #3A4048; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #3A4048; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #484f58; }
         
         /* Scanner */
@@ -61,6 +61,14 @@
             background-color: white; /* Ensure white background */
             display: block; /* Ensure it's part of layout */
         }
+        
+        /* Saving Indicator Pulse */
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .saving-pulse { animation: pulse-green 2s infinite; }
     </style>
 </head>
 <body>
@@ -68,16 +76,28 @@
     <!-- Hidden Canvas for generating chart images for PDF -->
     <canvas id="pdf-chart-canvas" width="500" height="500"></canvas>
 
-    <!-- FIREBASE MODULES (UPDATED TO V11.6.1 FOR CANVAS ENVIRONMENT) -->
+    <!-- FIREBASE MODULES -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken };
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, getAuth, signInAnonymously, onAuthStateChanged };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, Component } = React;
+
+        // ==========================================
+        // 🔑 CONFIGURACIÓN FIREBASE
+        // ==========================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBbyENQwbbPzbwpxd9WIVIkaZP1zYkn8X4",
+            authDomain: "liquor-control.firebaseapp.com",
+            projectId: "liquor-control",
+            storageBucket: "liquor-control.firebasestorage.app",
+            messagingSenderId: "221278168324",
+            appId: "1:221278168324:web:b763c0bc4c1020d40d1c51"
+        };
 
         // ==========================================
         // 📋 PAR LEVELS (NIVELES IDEALES)
@@ -625,7 +645,7 @@
         // 🛠️ UI COMPONENTS (Header, Row, Fields)
         // ==========================================
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -653,6 +673,13 @@
                                     </button>
                                     {/* DATE MOVED HERE - NEXT TO SEASON ICON */}
                                     <span className="text-[#f0f6fc]/50 font-bold uppercase tracking-wider text-[10px] border-l border-[#3A4048] pl-2 ml-1">{dateStr}</span>
+                                    
+                                    {/* SAVING INDICATOR */}
+                                    {isSaving && (
+                                        <span className="ml-2 flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase animate-in">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400 saving-pulse"></div> Guardando...
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -952,6 +979,10 @@
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
             const [showCountReview, setShowCountReview] = useState(false);
             
+            // NEW: SAVING STATE
+            const [isSaving, setIsSaving] = useState(false);
+            const saveTimeoutRef = useRef(null);
+            
             // NEW STATE FOR IMPORT MERGE
             const [pendingImportData, setPendingImportData] = useState(null);
             const [showImportModal, setShowImportModal] = useState(false);
@@ -978,60 +1009,34 @@
                 playSound('success');
             };
 
-            // MODIFIED: DYNAMIC FIREBASE INIT
             useEffect(() => {
                 const initApp = async () => {
-                    // Check if environment config exists
-                    if (typeof __firebase_config !== 'undefined') {
+                    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "" && fb) {
                         try {
-                            const firebaseConfig = JSON.parse(__firebase_config);
-                            const app = fb.initializeApp(firebaseConfig);
+                            const app = fb.initializeApp(FIREBASE_CONFIG);
                             const auth = fb.getAuth(app);
                             const db = fb.getFirestore(app);
-                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                            
-                            // Auth Logic
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await fb.signInWithCustomToken(auth, __initial_auth_token);
-                            } else {
-                                await fb.signInAnonymously(auth);
-                            }
-
+                            try { await fb.signInAnonymously(auth); } catch (authError) { throw new Error("Auth failed"); }
                             fb.onAuthStateChanged(auth, (u) => {
                                 setUser(u);
                                 if (u) {
                                     setIsCloud(true);
-                                    // Rule 1 Compliance: Path construction
-                                    const docRef = fb.doc(db, 'artifacts', appId, 'public', 'data', 'inventory', 'master');
-                                    
+                                    const docRef = fb.doc(db, 'inventory', 'master');
                                     fb.onSnapshot(docRef, (docSnap) => {
                                         if (docSnap.exists()) {
-                                            setData(docSnap.data().items);
-                                        } else {
-                                            // Create initial doc
-                                            fb.setDoc(docRef, { items: INITIAL_DATA });
-                                            setData(INITIAL_DATA);
+                                            // Only update if we are NOT currently typing/saving to prevent overwrite during typing
+                                            if (!isSaving) {
+                                                setData(docSnap.data().items);
+                                            }
                                         }
+                                        else { fb.setDoc(docRef, { items: INITIAL_DATA }); setData(INITIAL_DATA); }
                                         setLoading(false);
-                                    }, (err) => {
-                                        console.error("Firestore Error:", err);
-                                        setIsCloud(false);
-                                        loadLocal();
-                                    });
+                                    }, (err) => { setIsCloud(false); loadLocal(); });
                                 }
                             });
-                        } catch (e) {
-                            console.error("Init Error:", e);
-                            setIsCloud(false);
-                            loadLocal();
-                        }
-                    } else {
-                        // Fallback to local if no environment config
-                        setIsCloud(false);
-                        loadLocal();
-                    }
+                        } catch (e) { setIsCloud(false); loadLocal(); }
+                    } else { setIsCloud(false); loadLocal(); }
                 };
-                
                 const loadLocal = () => {
                     try {
                         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -1275,19 +1280,39 @@
             };
 
             const saveData = (newData) => {
-                setData(newData);
+                setData(newData); // Always update local immediately
+                
                 if (isCloud && user) {
-                    try {
-                        const firebaseConfig = JSON.parse(__firebase_config);
-                        const app = fb.initializeApp(firebaseConfig);
-                        const db = fb.getFirestore(app);
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                        const docRef = fb.doc(db, 'artifacts', appId, 'public', 'data', 'inventory', 'master');
-                        fb.setDoc(docRef, { items: newData });
-                    } catch (e) {
-                        console.error("Save Error:", e);
+                    setIsSaving(true);
+                    
+                    // Clear previous timer if exists (Debounce)
+                    if (saveTimeoutRef.current) {
+                        clearTimeout(saveTimeoutRef.current);
                     }
+
+                    // Set new timer - Wait 2 seconds of inactivity before sending to cloud
+                    saveTimeoutRef.current = setTimeout(() => {
+                        try {
+                            const app = fb.initializeApp(FIREBASE_CONFIG);
+                            const db = fb.getFirestore(app);
+                            // Send the data captured in the closure
+                            fb.setDoc(fb.doc(db, 'inventory', 'master'), { items: newData })
+                                .then(() => {
+                                    setIsSaving(false);
+                                    // playSound('success'); // Optional: feedback sound on save
+                                })
+                                .catch(err => {
+                                    console.error("Save error", err);
+                                    setIsSaving(false);
+                                });
+                        } catch (e) {
+                            console.error("Firebase error", e);
+                            setIsSaving(false);
+                        }
+                    }, 2000); // 2 second delay
+                    
                 } else {
+                    // Local Storage saves immediately
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
                 }
             };
@@ -1559,6 +1584,7 @@
                             seasonData={currentTheme}
                             onCycleSeason={cycleSeason}
                             onShowCount={() => setShowCountReview(true)}
+                            isSaving={isSaving}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
