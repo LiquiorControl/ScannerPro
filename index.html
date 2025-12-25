@@ -212,7 +212,7 @@
             } catch (e) { console.error("Audio play failed", e); }
         };
 
-        // --- NEW: LOGIN COMPONENT ---
+        // --- LOGIN COMPONENT (UPDATED FOR CUSTOM CREDENTIALS) ---
         const LoginView = ({ onLogin, onRegister, loading, error }) => {
             const [email, setEmail] = useState("");
             const [password, setPassword] = useState("");
@@ -240,13 +240,13 @@
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-xs font-bold text-[#f0f6fc]/60 uppercase mb-2">Email</label>
+                                <label className="block text-xs font-bold text-[#f0f6fc]/60 uppercase mb-2">Usuario / Email</label>
                                 <input 
-                                    type="email" 
+                                    type="text" 
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium"
-                                    placeholder="manager@palmas.com"
+                                    placeholder="Usuario o Email"
                                     required 
                                 />
                             </div>
@@ -922,9 +922,39 @@
             }, []);
 
             // --- AUTH FUNCTIONS ---
-            const handleLogin = async (email, password) => {
+            const handleLogin = async (inputEmail, inputPassword) => {
                 setAuthLoading(true);
                 setAuthError(null);
+                
+                // Trim inputs to avoid accidental spaces
+                const email = inputEmail.trim();
+                const password = inputPassword.trim();
+                
+                // --- HARDCODED CREDENTIALS CHECK ---
+                if (email === "palmas4647" && password === "Mendoza3197") {
+                    const adminUser = { 
+                        email: "palmas4647@local.admin", 
+                        uid: "admin-palmas-4647", 
+                        displayName: "Admin Palmas",
+                        isDemo: true 
+                    };
+                    setUser(adminUser);
+                    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(adminUser));
+                    playSound('success');
+                    showNotification("Bienvenido Admin Palmas");
+                    loadLocal(); // Load data
+                    setAuthLoading(false);
+                    return;
+                }
+
+                // Guard clause: If it's not an email, don't try Firebase
+                if (!email.includes('@')) {
+                    setAuthError("Usuario no reconocido. (Si usa correo, verifique formato)");
+                    playSound('error');
+                    setAuthLoading(false);
+                    return;
+                }
+
                 try {
                     const app = fb.initializeApp(FIREBASE_CONFIG);
                     const auth = fb.getAuth(app);
@@ -997,6 +1027,26 @@
                     console.error("Logout failed", e);
                     setUser(null);
                 }
+            };
+            
+            // Helper to load local data for manual logins
+            const loadLocal = () => {
+                 try {
+                    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    if (saved) {
+                        let loaded = JSON.parse(saved);
+                        INITIAL_DATA.forEach(initCat => {
+                            let targetCat = loaded.find(c => c.category === initCat.category);
+                            if (targetCat) {
+                                initCat.items.forEach(initItem => {
+                                    if (!targetCat.items.find(i => i.id === initItem.id)) { targetCat.items.push(initItem); }
+                                });
+                            } else { loaded.push(initCat); }
+                        });
+                        setData(loaded);
+                    } else setData(INITIAL_DATA);
+                } catch(e) {}
+                setLoading(false);
             };
 
             // --- PDF GENERATION LOGIC ---
@@ -1220,7 +1270,7 @@
 
             const saveData = (newData) => {
                 setData(newData);
-                if (isCloud && user) {
+                if (isCloud && user && !user.isDemo) {
                     try {
                         const app = fb.initializeApp(FIREBASE_CONFIG);
                         const db = fb.getFirestore(app);
@@ -1476,13 +1526,21 @@
 
             if (loading) return <div className="flex items-center justify-center min-h-screen text-[#f0f6fc]/50">Loading...</div>;
 
-            // --- AUTH GATE: SHOW LOGIN IF NOT LOGGED IN ---
+            // --- IF NO USER, SHOW LOGIN SCREEN ---
             if (!user) {
-                return <LoginView onLogin={handleLogin} onRegister={handleRegister} loading={authLoading} error={authError} />;
+                return (
+                    <LoginView 
+                        onLogin={handleLogin} 
+                        onRegister={handleRegister} 
+                        loading={authLoading} 
+                        error={authError} 
+                    />
+                );
             }
 
+            // --- IF USER, SHOW MAIN APP ---
             return (
-                <div className="min-h-screen bg-transparent font-sans pb-20 animate-in">
+                <div className="min-h-screen bg-transparent font-sans pb-20">
                     <div className="fixed top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
                         <Header 
                             onNewPeriod={confirmNewPeriod} 
@@ -1501,8 +1559,6 @@
                             seasonData={currentTheme}
                             onCycleSeason={cycleSeason}
                             onShowCount={() => setShowCountReview(true)}
-                            onLogout={handleLogout}
-                            userEmail={user.email}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
@@ -1558,6 +1614,15 @@
                         title="Add New Product"
                     >
                         <Icons.Plus size={28} />
+                    </button>
+                    
+                    {/* Logout Button (Small & Discreet) */}
+                    <button 
+                        onClick={handleLogout}
+                        className="fixed bottom-6 left-6 z-40 bg-[#1D1F23] text-[#f0f6fc]/40 p-3 rounded-full shadow-lg border border-[#3A4048] hover:text-red-400 hover:border-red-500/30 transition-all active:scale-95"
+                        title="Logout"
+                    >
+                        <Icons.LogOut size={20} />
                     </button>
 
                     <ConfirmationModal isOpen={!!modalConfig} onClose={() => setModalConfig(null)} onConfirm={modalConfig?.onConfirm} title={modalConfig?.title} message={modalConfig?.message} isDestructive={modalConfig?.isDestructive} />
