@@ -69,6 +69,10 @@
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .saving-pulse { animation: pulse-green 2s infinite; }
+
+        /* Login Screen Animation */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
     </style>
 </head>
 <body>
@@ -204,6 +208,85 @@
         };
 
         // --- COMPONENTS ---
+        
+        // LOGIN SCREEN COMPONENT
+        const LoginScreen = ({ onLogin }) => {
+            const [pin, setPin] = useState("");
+            const [error, setError] = useState(false);
+
+            const handleNum = (num) => {
+                if (pin.length < 4) {
+                    const newPin = pin + num;
+                    setPin(newPin);
+                    if (newPin.length === 4) {
+                        setTimeout(() => {
+                            if (newPin === "4647") {
+                                onLogin();
+                            } else {
+                                setError(true);
+                                playSound('error');
+                                setTimeout(() => {
+                                    setPin("");
+                                    setError(false);
+                                }, 400);
+                            }
+                        }, 200);
+                    } else {
+                        playSound('add');
+                    }
+                }
+            };
+
+            const handleDelete = () => {
+                if (pin.length > 0) {
+                    setPin(prev => prev.slice(0, -1));
+                    playSound('sub');
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center p-4 z-[9999]">
+                    <div className="mb-10 text-center animate-in">
+                        <div className="w-24 h-24 bg-gradient-to-br from-[#1D1F23] to-black rounded-3xl mx-auto mb-6 flex items-center justify-center border border-[#3A4048] shadow-2xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-indigo-500/10 blur-xl"></div>
+                            <Icons.GlassWater size={48} className="text-indigo-500 relative z-10" />
+                        </div>
+                        <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Master Bar</h1>
+                        <p className="text-[#f0f6fc]/40 text-sm font-medium uppercase tracking-widest">Control de Acceso</p>
+                    </div>
+
+                    <div className={`flex gap-6 mb-12 ${error ? 'shake' : ''}`}>
+                        {[0, 1, 2, 3].map(i => (
+                            <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 border ${
+                                pin.length > i 
+                                    ? (error ? 'bg-red-500 border-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-indigo-500 border-indigo-500 scale-110 shadow-[0_0_15px_rgba(99,102,241,0.5)]') 
+                                    : 'bg-transparent border-[#3A4048]'
+                            }`}></div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-6 max-w-xs w-full">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                            <button 
+                                key={num} 
+                                onClick={() => handleNum(num.toString())} 
+                                className="h-20 w-20 rounded-full text-3xl font-bold text-white bg-[#1D1F23] hover:bg-[#2A2D33] active:scale-90 transition-all border border-[#3A4048] shadow-lg flex items-center justify-center mx-auto"
+                            >
+                                {num}
+                            </button>
+                        ))}
+                        <div className="h-20 w-20"></div>
+                        <button onClick={() => handleNum("0")} className="h-20 w-20 rounded-full text-3xl font-bold text-white bg-[#1D1F23] hover:bg-[#2A2D33] active:scale-90 transition-all border border-[#3A4048] shadow-lg flex items-center justify-center mx-auto">0</button>
+                        <button onClick={handleDelete} className="h-20 w-20 flex items-center justify-center text-[#f0f6fc]/40 hover:text-white active:scale-90 transition-all mx-auto">
+                            <span className="text-2xl font-bold">✕</span>
+                        </button>
+                    </div>
+                    
+                    <div className="mt-10 text-[#f0f6fc]/20 text-xs font-mono">v2.6 Secure Access</div>
+                </div>
+            );
+        };
+
         const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, isDestructive }) => {
             if (!isOpen) return null;
             return (
@@ -963,6 +1046,9 @@
         };
 
         function App() {
+            // AUTH STATE
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            
             const [data, setData] = useState(INITIAL_DATA);
             const [loading, setLoading] = useState(true);
             const [isCloud, setIsCloud] = useState(false);
@@ -1563,6 +1649,18 @@
             const activeQuickItem = useMemo(() => { if (!quickScanItemId) return null; for (const cat of data) { const found = cat.items.find(i => i.id === quickScanItemId); if (found) return found; } return null; }, [data, quickScanItemId]);
 
             if (loading) return <div className="flex items-center justify-center min-h-screen text-[#f0f6fc]/50">Loading...</div>;
+
+            // AUTH GUARD
+            if (!isAuthenticated) {
+                return (
+                    <ErrorBoundary>
+                        <LoginScreen onLogin={() => {
+                            setIsAuthenticated(true);
+                            playSound('success');
+                        }} />
+                    </ErrorBoundary>
+                );
+            }
 
             return (
                 <div className="min-h-screen bg-transparent font-sans pb-20">
