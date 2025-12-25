@@ -28,8 +28,8 @@
     <style>
         /* DARK THEME GLOBAL */
         body { color: #f0f6fc; font-family: sans-serif; transition: background 1s ease; min-height: 100vh; }
-        .animate-in { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -68,12 +68,27 @@
     <!-- Hidden Canvas for generating chart images for PDF -->
     <canvas id="pdf-chart-canvas" width="500" height="500"></canvas>
 
-    <!-- FIREBASE MODULES -->
+    <!-- FIREBASE MODULES (UPDATED WITH AUTH METHODS) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, getAuth, signInAnonymously, onAuthStateChanged };
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        // Exporting extended Auth functions
+        window.fb = { 
+            initializeApp, 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            onSnapshot, 
+            getDoc, 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signOut
+        };
     </script>
 
     <script type="text/babel">
@@ -160,7 +175,9 @@
             Sprout: (p) => <IconWrapper {...p}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></IconWrapper>,
             List: (p) => <IconWrapper {...p}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></IconWrapper>,
             FileText: (p) => <IconWrapper {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconWrapper>,
-            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>
+            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>,
+            LogOut: (p) => <IconWrapper {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></IconWrapper>,
+            User: (p) => <IconWrapper {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>
         };
 
         // --- AUDIO HELPER ---
@@ -193,6 +210,82 @@
                 }
                 osc.start(now); osc.stop(now + 0.2);
             } catch (e) { console.error("Audio play failed", e); }
+        };
+
+        // --- NEW: LOGIN COMPONENT ---
+        const LoginView = ({ onLogin, onRegister, loading, error }) => {
+            const [email, setEmail] = useState("");
+            const [password, setPassword] = useState("");
+            const [isRegistering, setIsRegistering] = useState(false);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (isRegistering) {
+                    onRegister(email, password);
+                } else {
+                    onLogin(email, password);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 animate-in" style={{ background: "linear-gradient(135deg, #0f172a, #000000)" }}>
+                    <div className="w-full max-w-md bg-[#1D1F23] border border-[#3A4048] rounded-2xl shadow-2xl p-8 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+                        <div className="text-center mb-8">
+                            <div className="mx-auto w-16 h-16 bg-indigo-900/30 rounded-full flex items-center justify-center mb-4 border border-indigo-500/30">
+                                <Icons.User size={32} className="text-indigo-400" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Bar Control</h1>
+                            <p className="text-[#f0f6fc]/50">Palmas Tropical Escape</p>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-[#f0f6fc]/60 uppercase mb-2">Email</label>
+                                <input 
+                                    type="email" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                    placeholder="manager@palmas.com"
+                                    required 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-[#f0f6fc]/60 uppercase mb-2">Contraseña</label>
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium"
+                                    placeholder="••••••••"
+                                    required 
+                                />
+                            </div>
+                            {error && (
+                                <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center gap-3 animate-in">
+                                    <Icons.AlertTriangle size={18} className="text-red-400 shrink-0" />
+                                    <span className="text-red-200 text-sm">{error}</span>
+                                </div>
+                            )}
+                            <button 
+                                type="submit" 
+                                disabled={loading}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {loading ? <Icons.RefreshCw className="animate-spin" /> : (isRegistering ? "Crear Cuenta" : "Iniciar Sesión")}
+                            </button>
+                        </form>
+                        <div className="mt-6 text-center">
+                            <button 
+                                onClick={() => { setIsRegistering(!isRegistering); }}
+                                className="text-sm text-[#f0f6fc]/40 hover:text-indigo-400 transition-colors font-medium"
+                            >
+                                {isRegistering ? "¿Ya tienes cuenta? Inicia Sesión" : "¿No tienes cuenta? Crear una"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
         // --- COMPONENTS ---
@@ -633,238 +726,6 @@
             );
         };
 
-        // ==========================================
-        // 🛠️ UI COMPONENTS (Header, Row, Fields)
-        // ==========================================
-
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount }) => {
-            const date = new Date();
-            const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            let dateStr = date.toLocaleDateString('en-US', options);
-            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-            
-            // Season Icon
-            const SeasonIcon = seasonData.icon;
-
-            return (
-                <header className="bg-[#1D1F23]/90 border-b border-[#3A4048] text-white p-4 shadow-xl backdrop-blur-sm sticky top-0 z-50">
-                    <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-3 w-full lg:w-auto">
-                            <div className="bg-[#3A4048] p-1 rounded-full border border-[#4A5462] shadow-lg overflow-hidden h-21 w-21 flex-shrink-0 cursor-pointer hover:border-indigo-500 transition-all relative group" onClick={() => document.getElementById('logo-upload').click()} title="Click to change logo">
-                                <img src={logoSrc} alt="Logo" className="h-full w-full object-cover rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/4f46e5/ffffff?text=LOGO"; }} />
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full"><Icons.Upload size={16} className="text-white" /></div>
-                            </div>
-                            <input type="file" id="logo-upload" accept="image/*" className="hidden" onChange={onLogoUpload} />
-                            <div>
-                                <h1 className="font-bold text-lg leading-tight text-white">Master Bar Control Palmas</h1>
-                                <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
-                                    <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-[#3A4048] border-[#4A5462] text-[#f0f6fc]/50'} flex items-center gap-1 transition-colors`}>{isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}{isCloud ? 'Cloud' : 'Local'}</span>
-                                    {/* SEASON INDICATOR - CLICK TO CYCLE */}
-                                    <button onClick={onCycleSeason} className={`px-2 py-1 rounded-full border ${seasonData.border} ${seasonData.color} flex items-center justify-center ${seasonData.accent} shadow-sm transition-all hover:scale-110`} title="Click to change theme">
-                                        <SeasonIcon size={14} />
-                                    </button>
-                                    {/* DATE MOVED HERE - NEXT TO SEASON ICON */}
-                                    <span className="text-[#f0f6fc]/50 font-bold uppercase tracking-wider text-[10px] border-l border-[#3A4048] pl-2 ml-1">{dateStr}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col lg:items-end gap-2 w-full lg:w-auto">
-                            {/* Date removed from here */}
-                            <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
-                                {/* Botón "+" eliminado de aquí */}
-                                
-                                <button onClick={onScan} className="flex items-center gap-3 bg-[#3A4048] hover:bg-[#4A5462] text-white px-6 py-3 rounded-xl font-bold border border-[#4A5462] text-lg shadow-lg hover:shadow-xl hover:border-indigo-500 transition-all active:scale-95 mr-2"><Icons.Scan size={24} className="text-indigo-400" /> SCAN</button>
-                                {!isCloud && (
-                                    <div className="flex gap-2 mr-2 pr-2 border-r border-[#3A4048]">
-                                        <button onClick={onBackup} className="flex items-center gap-1 bg-[#3A4048] hover:bg-[#4A5462] text-[#f0f6fc]/60 px-3 py-2 rounded-lg text-sm border border-[#4A5462] transition-all" title="Guardar Respaldo (Backup)"><Icons.Save size={16} /></button>
-                                        <button onClick={onRestore} className="flex items-center gap-1 bg-[#3A4048] hover:bg-[#4A5462] text-[#f0f6fc]/60 px-3 py-2 rounded-lg text-sm border border-[#4A5462] transition-all" title="Cargar/Combinar Archivo"><Icons.Upload size={16} /></button>
-                                    </div>
-                                )}
-                                <button onClick={onShowCharts} className="flex items-center gap-2 bg-[#3A4048] hover:bg-[#4A5462] text-white px-3 py-2 rounded-lg font-medium border border-[#4A5462] text-sm shadow-sm"><Icons.BarChart size={18} className="text-indigo-400" /></button>
-                                
-                                {/* NEXT - Compacted to Icon Only (Same size as Trash) */}
-                                <button onClick={onNewPeriod} className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-900/20 active:scale-95 border border-indigo-500 transition-all" title="Next Period"><Icons.ArrowRight size={20} /></button>
-                                
-                                {/* SHOPPING - Compact */}
-                                <button onClick={onShopping} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-amber-900/20 active:scale-95 text-xs border border-amber-500"><Icons.ShoppingCart size={16} /> Shopping</button>
-                                
-                                {/* COUNT - Compact */}
-                                <button onClick={onShowCount} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-blue-900/20 active:scale-95 text-xs border border-blue-500"><Icons.List size={16} /> Count</button>
-
-                                {/* CSV BUTTON REMOVED */}
-                                
-                                {/* PDF BUTTON */}
-                                <button onClick={onDownloadPDF} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-rose-900/20 active:scale-95 text-xs border border-rose-500"><Icons.FileText size={16} /> PDF</button>
-
-                                <button onClick={onClearAll} className="p-2 bg-red-800/20 hover:bg-red-800/40 text-red-500 rounded-lg border border-red-500/50 transition-colors"><Icons.Trash size={20}/></button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-            );
-        };
-
-        const CategoryHeader = ({ title, icon: Icon, isOpen, toggle }) => (
-            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-[#1D1F23] border border-[#3A4048] hover:bg-[#1D1F23]/80 rounded-xl shadow-lg mb-2 transition-all group">
-                <div className="flex items-center gap-3">
-                    <div className="text-indigo-400 group-hover:text-indigo-300 transition-colors"><Icon size={20} /></div>
-                    <h2 className="font-bold text-white text-lg group-hover:text-white transition-colors">{title}</h2>
-                </div>
-                {isOpen ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}
-            </button>
-        );
-
-        const InputField = ({ label, value, onChange, colorClass = "border-[#30363d]", icon: Icon }) => (
-            <div className="relative group">
-                <label className="block text-[10px] text-[#f0f6fc]/60 font-bold uppercase mb-1 flex items-center gap-1 group-hover:text-indigo-400 transition-colors">{Icon && <Icon size={10} />} {label}</label>
-                <input type="number" step="0.1" placeholder="-" value={value} onChange={(e) => onChange(e.target.value)} className={`w-full bg-[#0A0A0A] border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all ${colorClass} ${value !== "" && value !== 0 ? 'text-indigo-300 font-bold border-indigo-500/50 bg-indigo-900/20' : 'text-[#f0f6fc]/50'}`} />
-            </div>
-        );
-        
-        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest, onDelete }) => {
-            const [isExpanded, setIsExpanded] = useState(false);
-            const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer") || categoryName.includes("Non Alcoholic");
-            const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
-            const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
-            const purchases = parseFloat(item.purchases) || 0;
-            const sales = parseFloat(item.sales) || 0;
-            const systemConsumption = totalStart + purchases - totalPhys;
-            const diff = sales - systemConsumption;
-            const hasPhysical = item.bar1 || item.bar2 || item.bodega || item.barroluco;
-            const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
-            const hasBarcode = !!item.barcode;
-            const hasCaseBarcode = !!item.barcode_case;
-
-            const bottleSizeOz = isWells ? 33.814 : 25.36;
-            const shotsPerBottle = bottleSizeOz / 1.2; 
-            
-            const displayBarcode = item.barcode ? item.barcode.split(',')[0].trim() : "Sin vincular";
-
-            const handleSalesChange = (type, val) => {
-                let newBottles = type === 'bottles' ? val : (item.sold_bottles || "");
-                let newShots = type === 'shots' ? val : (item.sold_shots || "");
-                let newComps = type === 'comps' ? val : (item.sold_comps || "");
-                const b = parseFloat(newBottles) || 0; const s = parseFloat(newShots) || 0; const c = parseFloat(newComps) || 0;
-                let totalSales = 0;
-                if (isUnitBased) totalSales = b + (s * 6) + c;
-                else totalSales = b + ((s * 1.2) / bottleSizeOz) + c;
-                onUpdate(item.id, { sold_bottles: newBottles, sold_shots: newShots, sold_comps: newComps, sales: totalSales > 0 ? totalSales.toFixed(2) : "" });
-            };
-            
-            const handleDirectSalesUpdate = (val) => { onUpdate(item.id, 'sales', val); };
-
-            let statusColor = "bg-[#1D1F23] border-[#3A4048]"; 
-            let badgeClass = "text-[#f0f6fc]/60 bg-[#0A0A0A] border border-[#3A4048]";
-            
-            if (hasPhysical && hasStart) {
-                if (diff < -0.1) { statusColor = "bg-[#1D1F23] border-red-500/50 shadow-[inset_4px_0_0_0_#ef4444]"; badgeClass = "text-red-400 bg-red-900/20 border border-red-500/30"; }
-                else if (diff > 0.1) { statusColor = "bg-[#1D1F23] border-blue-500/50 shadow-[inset_4px_0_0_0_#3b82f6]"; badgeClass = "text-blue-400 bg-blue-900/20 border border-blue-500/30"; }
-                else { statusColor = "bg-[#1D1F23] border-emerald-500/50 shadow-[inset_4px_0_0_0_#10b981]"; badgeClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/30"; }
-            }
-
-            return (
-                <div className={`rounded-xl border shadow-lg transition-all duration-300 overflow-hidden ${statusColor} mb-3 relative z-10`}>
-                    <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1D1F23]/80 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <span className="font-bold text-white text-base">{item.name}</span>
-                                {hasBarcode && <Icons.Barcode size={14} className="text-indigo-400" />}
-                                {hasCaseBarcode && <Icons.Box size={14} className="text-amber-400" />}
-                                {(hasPhysical && hasStart) ? <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span> : null}
-                            </div>
-                            <div className="text-xs text-[#f0f6fc]/50 mt-1 flex gap-3 font-mono">
-                                <span>On Hand: <b className="text-white">{totalStart}</b></span><span className="text-[#f0f6fc]/40">|</span><span>Physical: <b className="text-white">{totalPhys}</b></span>
-                            </div>
-                        </div>
-                        <div>{isExpanded ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}</div>
-                    </div>
-                    {isExpanded && (
-                        <div className="p-4 border-t border-[#3A4048]/50 bg-[#0A0A0A]/50 space-y-4 animate-in">
-                            <div className="space-y-2 mb-3">
-                                <div className="flex items-center justify-between bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]">
-                                    <div className="flex items-center gap-2">
-                                        <Icons.Barcode className="text-[#f0f6fc]/60" size={16} />
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase text-[#f0f6fc]/50 font-bold">Unit Barcode (CSV)</span>
-                                            <span className="text-xs font-mono text-white">{displayBarcode}</span>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => onScanRequest(item.id, 'unit')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-lg shadow-indigo-900/20 active:scale-95 transition-all">
-                                        <Icons.Scan size={14} /> {item.barcode ? "Cambiar/Añadir" : "Link Unit"}
-                                    </button>
-                                </div>
-                                {isUnitBased && (
-                                    <div className="flex items-center justify-between bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]">
-                                        <div className="flex items-center gap-2">
-                                            <Icons.Box className="text-amber-500" size={16} />
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase text-amber-500/70 font-bold">Case Barcode (24pk)</span>
-                                                <span className="text-xs font-mono text-white">{item.barcode_case || "Sin vincular"}</span>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => onScanRequest(item.id, 'case')} className="flex items-center gap-2 bg-amber-700 hover:bg-amber-600 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-lg shadow-amber-900/20 active:scale-95 transition-all">
-                                            <Icons.Scan size={14} /> {item.barcode_case ? "Cambiar" : "Link Case"}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]">
-                                <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div>
-                                <div className="grid grid-cols-4 gap-2">
-                                    <InputField label="Bar 1" value={item.start_bar1} onChange={(v) => onUpdate(item.id, 'start_bar1', v)} colorClass="border-[#3A4048] focus:border-amber-500" />
-                                    <InputField label="Bar 2" value={item.start_bar2} onChange={(v) => onUpdate(item.id, 'start_bar2', v)} colorClass="border-[#3A4048] focus:border-amber-500" />
-                                    <InputField label="Storage" value={item.start_bodega} onChange={(v) => onUpdate(item.id, 'start_bodega', v)} colorClass="border-[#3A4048] focus:border-amber-500" />
-                                    <InputField label="Barroluco" value={item.start_barroluco} onChange={(v) => onUpdate(item.id, 'start_barroluco', v)} colorClass="border-[#3A4048] focus:border-amber-500" />
-                                </div>
-                                <div className="text-right mt-2 text-xs font-bold text-amber-500/80">Total: {totalStart}</div>
-                            </div>
-                            <div className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048]">
-                                <div className="grid grid-cols-1 gap-3"><InputField label="2. Purchases (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" /></div>
-                            </div>
-                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]">
-                                <div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.MapPin size={12} /> 3. Physical Count (End)</div>
-                                <div className="grid grid-cols-4 gap-2">
-                                    <InputField label="Bar 1" value={item.bar1} onChange={(v) => onUpdate(item.id, 'bar1', v)} colorClass="border-[#3A4048] focus:border-indigo-500" />
-                                    <InputField label="Bar 2" value={item.bar2} onChange={(v) => onUpdate(item.id, 'bar2', v)} colorClass="border-[#3A4048] focus:border-indigo-500" />
-                                    <InputField label="Storage" value={item.bodega} onChange={(v) => onUpdate(item.id, 'bodega', v)} colorClass="border-[#3A4048] focus:border-indigo-500" />
-                                    <InputField label="Barroluco" value={item.barroluco} onChange={(v) => onUpdate(item.id, 'barroluco', v)} colorClass="border-[#3A4048] focus:border-indigo-500" />
-                                </div>
-                                <div className="text-right mt-2 text-xs font-bold text-indigo-400">Total: {totalPhys}</div>
-                            </div>
-                            <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20">
-                                <div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Sales Calculator (POS)</div>
-                                <div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10">
-                                    <div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">{isUnitBased ? "Unit Calculator" : `Shot Calculator (1.2oz @ ${isWells ? '1L' : '750ml'})`}</div>
-                                    <div className="grid grid-cols-3 gap-3 mb-2">
-                                        <div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Cans / Units" : "Bottles"}</label><input type="number" step="1" placeholder="0" value={item.sold_bottles || ""} onChange={(e) => handleSalesChange('bottles', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div>
-                                        <div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Buckets (x6)" : "Shots"}</label><input type="number" step="1" placeholder="0" value={item.sold_shots || ""} onChange={(e) => handleSalesChange('shots', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div>
-                                        <div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Comps (Units)" : "Comps (Bottles)"}</label><input type="number" step="1" placeholder="0" value={item.sold_comps || ""} onChange={(e) => handleSalesChange('comps', e.target.value)} className="w-full bg-[#0A0A0A] border border-emerald-700/50 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-emerald-500 text-emerald-100" /></div>
-                                    </div>
-                                    <div className="text-[9px] text-[#f0f6fc]/50 mt-1">{isUnitBased ? "Auto-updates. (1 Bucket = 6 Units) + Comps" : `Auto-updates. (1 Bottle = ${shotsPerBottle.toFixed(2)} Shots) + Comps`}</div>
-                                </div>
-                                <div className="grid grid-cols-1 gap-3"><InputField label="Total Sales POS (Calculated)" value={item.sales} onChange={(v) => handleDirectSalesUpdate(v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" /></div>
-                                <div className="text-right mt-4 text-xs text-[#f0f6fc]/50 font-mono space-y-2">
-                                    <div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div>
-                                    <div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between items-center pt-4 border-t border-[#3A4048]/50 mt-2">
-                                <div className="text-[9px] text-[#f0f6fc]/30 font-mono">ID: {item.id}</div>
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); onDelete(item); }}
-                                    className="flex items-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 hover:text-red-400 border border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                >
-                                    <Icons.Trash size={14} /> Delete
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
         const createItem = (id, name) => ({ id, name, bar1: "", bar2: "", bodega: "", barroluco: "", start_bar1: "", start_bar2: "", start_bodega: "", start_barroluco: "", purchases: "", sales: "", sold_bottles: "", sold_shots: "", sold_comps: "", barcode: "", barcode_case: "" });
 
         const INITIAL_DATA = [
@@ -952,6 +813,8 @@
             const [loading, setLoading] = useState(true);
             const [isCloud, setIsCloud] = useState(false);
             const [user, setUser] = useState(null);
+            const [authLoading, setAuthLoading] = useState(false);
+            const [authError, setAuthError] = useState(null);
             const [logo, setLogo] = useState(localStorage.getItem('BAR_LOGO') || "A New Design (4).jpg");
             const fb = window.fb;
             const fileInputRef = useRef(null);
@@ -959,6 +822,7 @@
             const [scanAttempt, setScanAttempt] = useState(0); 
             const [isResetting, setIsResetting] = useState(false);
             const LOCAL_STORAGE_KEY = 'bar-inventory-final-v26'; 
+            const DEMO_USER_KEY = 'DEMO_USER'; // New key for persisting demo login
 
             const [showAddProduct, setShowAddProduct] = useState(false);
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
@@ -992,25 +856,47 @@
 
             useEffect(() => {
                 const initApp = async () => {
+                    // Check for persistent DEMO USER first
+                    const demoUser = localStorage.getItem(DEMO_USER_KEY);
+                    if (demoUser) {
+                        setUser(JSON.parse(demoUser));
+                        setIsCloud(false);
+                        loadLocal();
+                        return;
+                    }
+
                     if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "" && fb) {
                         try {
                             const app = fb.initializeApp(FIREBASE_CONFIG);
                             const auth = fb.getAuth(app);
                             const db = fb.getFirestore(app);
-                            try { await fb.signInAnonymously(auth); } catch (authError) { throw new Error("Auth failed"); }
+                            
+                            // Listen to auth state
                             fb.onAuthStateChanged(auth, (u) => {
                                 setUser(u);
                                 if (u) {
                                     setIsCloud(true);
+                                    // Use 'master' document for shared collaboration
                                     const docRef = fb.doc(db, 'inventory', 'master');
                                     fb.onSnapshot(docRef, (docSnap) => {
                                         if (docSnap.exists()) setData(docSnap.data().items);
                                         else { fb.setDoc(docRef, { items: INITIAL_DATA }); setData(INITIAL_DATA); }
                                         setLoading(false);
-                                    }, (err) => { setIsCloud(false); loadLocal(); });
+                                    }, (err) => { 
+                                        console.error("Firestore sync error:", err);
+                                        setIsCloud(false); 
+                                        loadLocal(); 
+                                    });
+                                } else {
+                                    // Not logged in
+                                    setLoading(false);
                                 }
                             });
-                        } catch (e) { setIsCloud(false); loadLocal(); }
+                        } catch (e) { 
+                            console.error("Firebase init failed:", e);
+                            setIsCloud(false); 
+                            loadLocal(); 
+                        }
                     } else { setIsCloud(false); loadLocal(); }
                 };
                 const loadLocal = () => {
@@ -1018,16 +904,15 @@
                         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
                         if (saved) {
                             let loaded = JSON.parse(saved);
-                            let updated = false;
+                            // Basic merge with initial data
                             INITIAL_DATA.forEach(initCat => {
                                 let targetCat = loaded.find(c => c.category === initCat.category);
                                 if (targetCat) {
                                     initCat.items.forEach(initItem => {
-                                        if (!targetCat.items.find(i => i.id === initItem.id)) { targetCat.items.push(initItem); updated = true; }
+                                        if (!targetCat.items.find(i => i.id === initItem.id)) { targetCat.items.push(initItem); }
                                     });
-                                } else { loaded.push(initCat); updated = true; }
+                                } else { loaded.push(initCat); }
                             });
-                            if (updated) localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(loaded));
                             setData(loaded);
                         } else setData(INITIAL_DATA);
                     } catch(e) {}
@@ -1035,6 +920,84 @@
                 };
                 initApp();
             }, []);
+
+            // --- AUTH FUNCTIONS ---
+            const handleLogin = async (email, password) => {
+                setAuthLoading(true);
+                setAuthError(null);
+                try {
+                    const app = fb.initializeApp(FIREBASE_CONFIG);
+                    const auth = fb.getAuth(app);
+                    await fb.signInWithEmailAndPassword(auth, email, password);
+                    playSound('success');
+                } catch (error) {
+                    console.error("Login failed:", error);
+                    // FALLBACK TO DEMO MODE if config is missing or error occurs
+                    if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed' || error.code === 'auth/internal-error') {
+                        const demoUser = { email: email, uid: 'demo-' + Date.now(), isDemo: true };
+                        setUser(demoUser);
+                        localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
+                        playSound('success');
+                        showNotification("Modo Demo Local Activado (Backend no configurado)");
+                        loadLocal(); // Ensure data loads from local storage
+                    } else {
+                        let msg = "Error al iniciar sesión.";
+                        if (error.code === 'auth/invalid-email') msg = "Correo inválido.";
+                        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') msg = "Credenciales incorrectas.";
+                        setAuthError(msg);
+                        playSound('error');
+                    }
+                } finally {
+                    setAuthLoading(false);
+                }
+            };
+
+            const handleRegister = async (email, password) => {
+                setAuthLoading(true);
+                setAuthError(null);
+                try {
+                    const app = fb.initializeApp(FIREBASE_CONFIG);
+                    const auth = fb.getAuth(app);
+                    await fb.createUserWithEmailAndPassword(auth, email, password);
+                    playSound('success');
+                    showNotification("Cuenta creada exitosamente!");
+                } catch (error) {
+                    console.error("Register failed:", error);
+                    // FALLBACK TO DEMO MODE if config is missing
+                    if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed' || error.code === 'auth/internal-error') {
+                         const demoUser = { email: email, uid: 'demo-' + Date.now(), isDemo: true };
+                        setUser(demoUser);
+                        localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
+                        playSound('success');
+                        showNotification("Cuenta creada en Modo Demo (Local)");
+                        loadLocal();
+                    } else {
+                        let msg = "Error al registrarse.";
+                        if (error.code === 'auth/email-already-in-use') msg = "Este correo ya está registrado.";
+                        if (error.code === 'auth/weak-password') msg = "La contraseña es muy débil (min 6 caracteres).";
+                        setAuthError(msg);
+                        playSound('error');
+                    }
+                } finally {
+                    setAuthLoading(false);
+                }
+            };
+
+            const handleLogout = async () => {
+                try {
+                    // Clear local demo user
+                    localStorage.removeItem(DEMO_USER_KEY);
+                    
+                    const app = fb.initializeApp(FIREBASE_CONFIG);
+                    const auth = fb.getAuth(app);
+                    await fb.signOut(auth);
+                    setUser(null); // Force UI update
+                    showNotification("Sesión cerrada.");
+                } catch (e) {
+                    console.error("Logout failed", e);
+                    setUser(null);
+                }
+            };
 
             // --- PDF GENERATION LOGIC ---
             const generatePDF = async () => {
@@ -1513,8 +1476,13 @@
 
             if (loading) return <div className="flex items-center justify-center min-h-screen text-[#f0f6fc]/50">Loading...</div>;
 
+            // --- AUTH GATE: SHOW LOGIN IF NOT LOGGED IN ---
+            if (!user) {
+                return <LoginView onLogin={handleLogin} onRegister={handleRegister} loading={authLoading} error={authError} />;
+            }
+
             return (
-                <div className="min-h-screen bg-transparent font-sans pb-20">
+                <div className="min-h-screen bg-transparent font-sans pb-20 animate-in">
                     <div className="fixed top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
                         <Header 
                             onNewPeriod={confirmNewPeriod} 
@@ -1533,6 +1501,8 @@
                             seasonData={currentTheme}
                             onCycleSeason={cycleSeason}
                             onShowCount={() => setShowCountReview(true)}
+                            onLogout={handleLogout}
+                            userEmail={user.email}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
