@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,10 +18,10 @@
     <!-- 4. Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <!-- 5. Chart.js (Esencial para el gráfico circular) -->
+    <!-- 5. Chart.js (Essential for the Pie Chart) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 6. jsPDF & AutoTable (Para generación de PDF) -->
+    <!-- 6. jsPDF & AutoTable (For PDF Generation) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
@@ -31,13 +31,16 @@
         .animate-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(29, 31, 35, 0.5); }
-        ::-webkit-scrollbar-thumb { background: #3A4048; border-radius: 4px; }
+        ::-webkit-webkit-scrollbar-thumb { background: #3A4048; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #484f58; }
         
         /* Scanner */
@@ -61,18 +64,6 @@
             background-color: white; /* Ensure white background */
             display: block; /* Ensure it's part of layout */
         }
-        
-        /* Saving Indicator Pulse */
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        .saving-pulse { animation: pulse-green 2s infinite; }
-
-        /* Login Screen Animation */
-        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
     </style>
 </head>
 <body>
@@ -80,28 +71,16 @@
     <!-- Hidden Canvas for generating chart images for PDF -->
     <canvas id="pdf-chart-canvas" width="500" height="500"></canvas>
 
-    <!-- FIREBASE MODULES -->
+    <!-- FIREBASE MODULES (UPDATED TO V11.6.1 FOR CANVAS ENVIRONMENT) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, getAuth, signInAnonymously, onAuthStateChanged };
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, Component } = React;
-
-        // ==========================================
-        // 🔑 CONFIGURACIÓN FIREBASE
-        // ==========================================
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyBbyENQwbbPzbwpxd9WIVIkaZP1zYkn8X4",
-            authDomain: "liquor-control.firebaseapp.com",
-            projectId: "liquor-control",
-            storageBucket: "liquor-control.firebasestorage.app",
-            messagingSenderId: "221278168324",
-            appId: "1:221278168324:web:b763c0bc4c1020d40d1c51"
-        };
 
         // ==========================================
         // 📋 PAR LEVELS (NIVELES IDEALES)
@@ -172,7 +151,8 @@
             Sprout: (p) => <IconWrapper {...p}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></IconWrapper>,
             List: (p) => <IconWrapper {...p}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></IconWrapper>,
             FileText: (p) => <IconWrapper {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconWrapper>,
-            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>
+            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>,
+            Lock: (p) => <IconWrapper {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></IconWrapper>
         };
 
         // --- AUDIO HELPER ---
@@ -208,81 +188,63 @@
         };
 
         // --- COMPONENTS ---
-        
-        // LOGIN SCREEN COMPONENT
-        const LoginScreen = ({ onLogin }) => {
+
+        // NEW: PIN SCREEN COMPONENT
+        const PinScreen = ({ onUnlock }) => {
             const [pin, setPin] = useState("");
             const [error, setError] = useState(false);
 
-            const handleNum = (num) => {
+            const handlePress = (num) => {
                 if (pin.length < 4) {
+                    playSound('add');
                     const newPin = pin + num;
                     setPin(newPin);
+                    setError(false);
                     if (newPin.length === 4) {
-                        setTimeout(() => {
-                            if (newPin === "4647") {
-                                onLogin();
-                            } else {
-                                setError(true);
-                                playSound('error');
-                                setTimeout(() => {
-                                    setPin("");
-                                    setError(false);
-                                }, 400);
-                            }
-                        }, 200);
-                    } else {
-                        playSound('add');
+                        if (newPin === "4647") {
+                            playSound('success');
+                            onUnlock();
+                        } else {
+                            playSound('error');
+                            setError(true);
+                            setTimeout(() => setPin(""), 400);
+                        }
                     }
                 }
             };
 
-            const handleDelete = () => {
-                if (pin.length > 0) {
-                    setPin(prev => prev.slice(0, -1));
-                    playSound('sub');
-                }
-            };
+            const handleDelete = () => setPin(prev => prev.slice(0, -1));
 
             return (
-                <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center p-4 z-[9999]">
-                    <div className="mb-10 text-center animate-in">
-                        <div className="w-24 h-24 bg-gradient-to-br from-[#1D1F23] to-black rounded-3xl mx-auto mb-6 flex items-center justify-center border border-[#3A4048] shadow-2xl relative overflow-hidden">
-                            <div className="absolute inset-0 bg-indigo-500/10 blur-xl"></div>
-                            <Icons.GlassWater size={48} className="text-indigo-500 relative z-10" />
+                <div className="fixed inset-0 bg-[#0A0A0A] z-[100] flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#0A0A0A] to-[#1D1F23]">
+                    <div className="mb-10 text-center flex flex-col items-center animate-in">
+                        <div className="p-4 bg-[#1D1F23] rounded-full border border-[#3A4048] shadow-2xl mb-4">
+                            <Icons.Lock size={40} className="text-indigo-500" />
                         </div>
-                        <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Master Bar</h1>
-                        <p className="text-[#f0f6fc]/40 text-sm font-medium uppercase tracking-widest">Control de Acceso</p>
+                        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Master Bar Control</h1>
+                        <p className="text-[#f0f6fc]/50 font-medium">Enter PIN to Access</p>
                     </div>
 
-                    <div className={`flex gap-6 mb-12 ${error ? 'shake' : ''}`}>
+                    <div className={`flex gap-4 mb-10 h-6 ${error ? 'animate-shake' : ''}`}>
                         {[0, 1, 2, 3].map(i => (
-                            <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 border ${
-                                pin.length > i 
-                                    ? (error ? 'bg-red-500 border-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-indigo-500 border-indigo-500 scale-110 shadow-[0_0_15px_rgba(99,102,241,0.5)]') 
-                                    : 'bg-transparent border-[#3A4048]'
-                            }`}></div>
+                            <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${pin.length > i ? (error ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]') : 'bg-[#3A4048]'}`}></div>
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-6 max-w-xs w-full">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                            <button 
-                                key={num} 
-                                onClick={() => handleNum(num.toString())} 
-                                className="h-20 w-20 rounded-full text-3xl font-bold text-white bg-[#1D1F23] hover:bg-[#2A2D33] active:scale-90 transition-all border border-[#3A4048] shadow-lg flex items-center justify-center mx-auto"
-                            >
-                                {num}
+                    <div className="grid grid-cols-3 gap-6 w-full max-w-[320px]">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                            <button key={n} onClick={() => handlePress(n)} className="h-20 w-20 rounded-full bg-[#1D1F23] border border-[#3A4048] text-3xl font-bold text-white active:bg-indigo-600 active:border-indigo-500 hover:border-[#f0f6fc]/30 transition-all shadow-lg flex items-center justify-center mx-auto active:scale-95">
+                                {n}
                             </button>
                         ))}
-                        <div className="h-20 w-20"></div>
-                        <button onClick={() => handleNum("0")} className="h-20 w-20 rounded-full text-3xl font-bold text-white bg-[#1D1F23] hover:bg-[#2A2D33] active:scale-90 transition-all border border-[#3A4048] shadow-lg flex items-center justify-center mx-auto">0</button>
-                        <button onClick={handleDelete} className="h-20 w-20 flex items-center justify-center text-[#f0f6fc]/40 hover:text-white active:scale-90 transition-all mx-auto">
-                            <span className="text-2xl font-bold">✕</span>
+                        <div className="h-20 w-20 flex items-center justify-center"></div>
+                        <button onClick={() => handlePress(0)} className="h-20 w-20 rounded-full bg-[#1D1F23] border border-[#3A4048] text-3xl font-bold text-white active:bg-indigo-600 active:border-indigo-500 hover:border-[#f0f6fc]/30 transition-all shadow-lg flex items-center justify-center mx-auto active:scale-95">0</button>
+                        <button onClick={handleDelete} className="h-20 w-20 rounded-full bg-transparent text-[#f0f6fc]/40 hover:text-white active:text-red-400 flex items-center justify-center mx-auto transition-colors">
+                            <Icons.Trash size={28} />
                         </button>
                     </div>
                     
-                    <div className="mt-10 text-[#f0f6fc]/20 text-xs font-mono">v2.6 Secure Access</div>
+                    <div className="mt-12 text-[#f0f6fc]/20 text-xs font-mono">Palmas Tropical Escape v31.2</div>
                 </div>
             );
         };
@@ -390,13 +352,23 @@
         const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega' }) => {
             if (!item) return null;
             const [activeField, setActiveField] = useState(initialLocation);
+            const [customVal, setCustomVal] = useState(""); // Nuevo estado para valor manual
             const currentValue = parseFloat(item[activeField]) || 0;
 
             const handleDelta = (delta) => {
                 if (delta > 0) playSound('add'); else playSound('sub');
-                const next = Math.round((currentValue + delta) * 10) / 10;
+                const next = Math.round((currentValue + delta) * 100) / 100;
                 const newValue = Math.max(0, next);
                 onUpdate(item.id, activeField, newValue);
+            };
+
+            const handleCustomAdd = () => {
+                const val = parseFloat(customVal);
+                if (!isNaN(val) && val !== 0) {
+                    handleDelta(val); // Esto SUMA al valor actual usando la lógica existente
+                    setCustomVal(""); // Limpia el input
+                    // showNotification(`Added +${val} to ${item.name}`); // Notification is in App
+                }
             };
 
             const locations = [
@@ -411,7 +383,7 @@
                 <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-4">
                     <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-4 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
-                            <div><h2 className="text-xl font-bold text-white leading-tight">{item.name}</h2><p className="text-xs text-[#f0f6fc]/50 font-mono mt-1">Quick Edit Mode</p></div>
+                            <div><h2 className="text-xl font-bold text-white leading-tight">{item.name}</h2><p className="text-xs text-[#f0f6fc]/50 font-mono mt-1">Quick Edit Mode (Add to Total)</p></div>
                             <button onClick={onClose} className="bg-[#3A4048] hover:bg-[#4A5462] text-white p-2 rounded-full transition-colors"><span className="text-xl px-2">&times;</span></button>
                         </div>
                         <div className="p-2 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
@@ -422,10 +394,28 @@
                             </div>
                         </div>
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
-                            <div className="text-center mb-8">
-                                <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">Current Count ({locations.find(l => l.id === activeField)?.label})</div>
-                                <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums">{currentValue}</div>
+                            <div className="text-center mb-6 w-full">
+                                <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">Total Count ({locations.find(l => l.id === activeField)?.label})</div>
+                                <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums mb-4">{currentValue}</div>
+                                
+                                {/* NEW: Manual Add Input */}
+                                <div className="flex gap-2 justify-center w-full max-w-xs mx-auto bg-[#0A0A0A] p-2 rounded-xl border border-[#3A4048]">
+                                    <input 
+                                        type="number" 
+                                        placeholder="Qty found..." 
+                                        value={customVal}
+                                        onChange={(e) => setCustomVal(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCustomAdd()}
+                                        className="w-full bg-transparent text-white text-center font-bold focus:outline-none placeholder:text-[#f0f6fc]/30"
+                                        autoFocus
+                                    />
+                                    <button onClick={handleCustomAdd} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg whitespace-nowrap transition-transform active:scale-95">
+                                        ADD +
+                                    </button>
+                                </div>
+                                <div className="text-[10px] text-[#f0f6fc]/30 mt-2">Enter amount found here and click ADD to sum it.</div>
                             </div>
+
                             <div className="w-full grid grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2 items-end">
                                     <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 24</button>
@@ -443,7 +433,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4 bg-[#1D1F23] border-t border-[#3A4048]"><button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-900/30">Done</button></div>
+                        <div className="p-4 bg-[#1D1F23] border-t border-[#3A4048]"><button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-900/30">Done & Scan Next</button></div>
                     </div>
                 </div>
             );
@@ -728,7 +718,7 @@
         // 🛠️ UI COMPONENTS (Header, Row, Fields)
         // ==========================================
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -756,13 +746,6 @@
                                     </button>
                                     {/* DATE MOVED HERE - NEXT TO SEASON ICON */}
                                     <span className="text-[#f0f6fc]/50 font-bold uppercase tracking-wider text-[10px] border-l border-[#3A4048] pl-2 ml-1">{dateStr}</span>
-                                    
-                                    {/* SAVING INDICATOR */}
-                                    {isSaving && (
-                                        <span className="ml-2 flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase animate-in">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-400 saving-pulse"></div> Guardando...
-                                        </span>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1046,9 +1029,9 @@
         };
 
         function App() {
-            // AUTH STATE
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            
+            // MAIN APP STATE
+            const [isLocked, setIsLocked] = useState(true); // Default to locked
+
             const [data, setData] = useState(INITIAL_DATA);
             const [loading, setLoading] = useState(true);
             const [isCloud, setIsCloud] = useState(false);
@@ -1064,10 +1047,6 @@
             const [showAddProduct, setShowAddProduct] = useState(false);
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
             const [showCountReview, setShowCountReview] = useState(false);
-            
-            // NEW: SAVING STATE
-            const [isSaving, setIsSaving] = useState(false);
-            const saveTimeoutRef = useRef(null);
             
             // NEW STATE FOR IMPORT MERGE
             const [pendingImportData, setPendingImportData] = useState(null);
@@ -1095,34 +1074,60 @@
                 playSound('success');
             };
 
+            // MODIFIED: DYNAMIC FIREBASE INIT
             useEffect(() => {
                 const initApp = async () => {
-                    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "" && fb) {
+                    // Check if environment config exists
+                    if (typeof __firebase_config !== 'undefined') {
                         try {
-                            const app = fb.initializeApp(FIREBASE_CONFIG);
+                            const firebaseConfig = JSON.parse(__firebase_config);
+                            const app = fb.initializeApp(firebaseConfig);
                             const auth = fb.getAuth(app);
                             const db = fb.getFirestore(app);
-                            try { await fb.signInAnonymously(auth); } catch (authError) { throw new Error("Auth failed"); }
+                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                            
+                            // Auth Logic
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await fb.signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                await fb.signInAnonymously(auth);
+                            }
+
                             fb.onAuthStateChanged(auth, (u) => {
                                 setUser(u);
                                 if (u) {
                                     setIsCloud(true);
-                                    const docRef = fb.doc(db, 'inventory', 'master');
+                                    // Rule 1 Compliance: Path construction
+                                    const docRef = fb.doc(db, 'artifacts', appId, 'public', 'data', 'inventory', 'master');
+                                    
                                     fb.onSnapshot(docRef, (docSnap) => {
                                         if (docSnap.exists()) {
-                                            // Only update if we are NOT currently typing/saving to prevent overwrite during typing
-                                            if (!isSaving) {
-                                                setData(docSnap.data().items);
-                                            }
+                                            setData(docSnap.data().items);
+                                        } else {
+                                            // Create initial doc
+                                            fb.setDoc(docRef, { items: INITIAL_DATA });
+                                            setData(INITIAL_DATA);
                                         }
-                                        else { fb.setDoc(docRef, { items: INITIAL_DATA }); setData(INITIAL_DATA); }
                                         setLoading(false);
-                                    }, (err) => { setIsCloud(false); loadLocal(); });
+                                    }, (err) => {
+                                        console.error("Firestore Error:", err);
+                                        setIsCloud(false);
+                                        loadLocal();
+                                    });
                                 }
                             });
-                        } catch (e) { setIsCloud(false); loadLocal(); }
-                    } else { setIsCloud(false); loadLocal(); }
+                        } catch (e) {
+                            console.error("Init Error:", e);
+                            setIsCloud(false);
+                            loadLocal();
+                        }
+                    } else {
+                        // Fallback to local if no environment config
+                        setIsCloud(false);
+                        loadLocal();
+                    }
                 };
+                
                 const loadLocal = () => {
                     try {
                         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -1366,39 +1371,19 @@
             };
 
             const saveData = (newData) => {
-                setData(newData); // Always update local immediately
-                
+                setData(newData);
                 if (isCloud && user) {
-                    setIsSaving(true);
-                    
-                    // Clear previous timer if exists (Debounce)
-                    if (saveTimeoutRef.current) {
-                        clearTimeout(saveTimeoutRef.current);
+                    try {
+                        const firebaseConfig = JSON.parse(__firebase_config);
+                        const app = fb.initializeApp(firebaseConfig);
+                        const db = fb.getFirestore(app);
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                        const docRef = fb.doc(db, 'artifacts', appId, 'public', 'data', 'inventory', 'master');
+                        fb.setDoc(docRef, { items: newData });
+                    } catch (e) {
+                        console.error("Save Error:", e);
                     }
-
-                    // Set new timer - Wait 2 seconds of inactivity before sending to cloud
-                    saveTimeoutRef.current = setTimeout(() => {
-                        try {
-                            const app = fb.initializeApp(FIREBASE_CONFIG);
-                            const db = fb.getFirestore(app);
-                            // Send the data captured in the closure
-                            fb.setDoc(fb.doc(db, 'inventory', 'master'), { items: newData })
-                                .then(() => {
-                                    setIsSaving(false);
-                                    // playSound('success'); // Optional: feedback sound on save
-                                })
-                                .catch(err => {
-                                    console.error("Save error", err);
-                                    setIsSaving(false);
-                                });
-                        } catch (e) {
-                            console.error("Firebase error", e);
-                            setIsSaving(false);
-                        }
-                    }, 2000); // 2 second delay
-                    
                 } else {
-                    // Local Storage saves immediately
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
                 }
             };
@@ -1648,22 +1633,15 @@
             const getIcon = (n) => { if (n.includes("Premium")) return Icons.GlassWater; if (n.includes("Wells")) return Icons.Package; if (n.includes("Beers")) return Icons.Beer; if (n.includes("Wines")) return Icons.Wine; if (n.includes("Non Alcoholic")) return Icons.Leaf; return Icons.RefreshCw; };
             const activeQuickItem = useMemo(() => { if (!quickScanItemId) return null; for (const cat of data) { const found = cat.items.find(i => i.id === quickScanItemId); if (found) return found; } return null; }, [data, quickScanItemId]);
 
-            if (loading) return <div className="flex items-center justify-center min-h-screen text-[#f0f6fc]/50">Loading...</div>;
-
-            // AUTH GUARD
-            if (!isAuthenticated) {
-                return (
-                    <ErrorBoundary>
-                        <LoginScreen onLogin={() => {
-                            setIsAuthenticated(true);
-                            playSound('success');
-                        }} />
-                    </ErrorBoundary>
-                );
+            // PIN LOCK CHECK
+            if (isLocked) {
+                return <PinScreen onUnlock={() => setIsLocked(false)} />;
             }
 
+            if (loading) return <div className="flex items-center justify-center min-h-screen text-[#f0f6fc]/50">Loading...</div>;
+
             return (
-                <div className="min-h-screen bg-transparent font-sans pb-20">
+                <div className="min-h-screen bg-transparent font-sans pb-20 animate-in">
                     <div className="fixed top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
                         <Header 
                             onNewPeriod={confirmNewPeriod} 
@@ -1682,7 +1660,6 @@
                             seasonData={currentTheme}
                             onCycleSeason={cycleSeason}
                             onShowCount={() => setShowCountReview(true)}
-                            isSaving={isSaving}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
