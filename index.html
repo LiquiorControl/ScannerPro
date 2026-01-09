@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v7.5</title>
+    <title>Master Bar Control v7.5.1</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -103,7 +103,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v7.5...</div>
+            <div class="animate-pulse">Loading Master Bar Control v7.5.1...</div>
         </div>
     </div>
     
@@ -130,7 +130,7 @@
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "7.5";
+        const APP_VERSION = "7.5.1";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
@@ -177,7 +177,7 @@
             // Beers
             "Modelo Especial": 600, "Corona": 720, "Michelob Ultra": 72, "Heineken": 48, "Pacifico": 48,
             // Energy & Seltzer
-            "Red Bull Regular": 96, "Red Bull Sugar Free": 72, "Red Bull Watermelon": 48,
+            "Red Bull Regular": 96, "Red Bull Sugar Free": 72, "Red Bull Watermelon": 48, "High Noon Variety Pack": 48,
             // Wines
             "Cafayate Malbec": 1, "Procecco Zonin": 6, "Sangria": 12,
             // Non Alcoholic
@@ -1183,7 +1183,7 @@
                             <button onClick={() => setActiveTab('cocktails')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'cocktails' ? 'bg-indigo-600 text-white shadow' : 'text-[#f0f6fc]/40 hover:text-white'}`}><Icons.Cocktail size={14} /> COCKTAILS</button>
                             <button onClick={() => setActiveTab('pitchers')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'pitchers' ? 'bg-amber-600 text-white shadow' : 'text-[#f0f6fc]/40 hover:text-white'}`}><Icons.Pitcher size={14} /> PITCHERS</button>
                         </div>
-                        <div className="relative"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={18} /><input type="text" placeholder={`Search ${activeTab.slice(0, -1)}...`} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-[#f0f6fc]/40 text-sm font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />{searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50 hover:text-white">✕</button>}</div>
+                        <div className="relative"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={18} /><input type="text" placeholder={`Search ${activeTab.slice(0, -1)}...`} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-[#f0f6fc]/40 text-sm font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />{searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50 hover:text-white">✕</button>}</div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-8">
                         {activeTab === 'products' ? (
@@ -1232,7 +1232,7 @@
                         <div className="flex flex-col lg:items-end gap-2 w-full lg:w-auto relative">
                             <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
                                 <button onClick={onToggleZoneSelector} className={`flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold border border-orange-400 text-sm shadow-lg shadow-orange-900/30 transition-all active:scale-95 ${showZoneSelector ? 'ring-2 ring-orange-500/50 scale-105' : ''}`}><Icons.Scan size={20} className="text-white" /><span>SCAN</span></button>
-                                <button onClick={onToggleSearch} className={`flex items-center justify-center bg-violet-600 hover:bg-violet-500 text-white w-11 h-11 rounded-xl font-bold shadow-lg shadow-violet-900/30 active:scale-95 border border-violet-400 transition-all ${showSearch ? 'ring-2 ring-violet-500/50 scale-105' : ''}`}><Icons.Search size={22} /></button>
+                                <button onClick={onToggleSearch} className={`flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white w-11 h-11 rounded-xl font-bold shadow-lg shadow-blue-900/30 active:scale-95 border border-blue-400 transition-all ${showSearch ? 'ring-2 ring-blue-500/50 scale-105' : ''}`}><Icons.Search size={22} /></button>
                                 <button onClick={onShowCount} className="flex items-center gap-2 bg-green-500 hover:bg-green-400 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-green-900/30 active:scale-95 text-sm border border-green-400"><Icons.List size={20} /> COUNT</button>
                                 <button onClick={() => setShowMenu(!showMenu)} className={`flex items-center justify-center w-11 h-11 rounded-xl font-bold shadow-lg active:scale-95 border transition-all ${showMenu ? 'bg-slate-600 text-white ring-2 ring-slate-500/50 scale-105' : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-500 shadow-slate-900/30'}`}><Icons.Settings size={22} /></button>
                             </div>
@@ -1625,7 +1625,7 @@
                             />
                         )}
                         {showSearch && (
-                            <div className="bg-[#0A0A0A]/90 p-4 border-b border-[#3A4048] backdrop-blur-sm animate-in"><div className="max-w-5xl mx-auto relative flex gap-2"><div className="relative flex-1"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={20} /><input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" autoFocus/></div><button onClick={() => { setShowSearch(false); setSearchTerm(""); }} className="bg-[#3A4048] hover:bg-[#4A5462] text-white px-4 rounded-xl font-bold border border-[#4A5462]">✕</button></div></div>
+                            <div className="bg-[#0A0A0A]/90 p-4 border-b border-[#3A4048] backdrop-blur-sm animate-in"><div className="max-w-5xl mx-auto relative flex gap-2"><div className="relative flex-1"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={20} /><input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" autoFocus/></div><button onClick={() => { setShowSearch(false); setSearchTerm(""); }} className="bg-[#3A4048] hover:bg-[#4A5462] text-white px-4 rounded-xl font-bold border border-[#4A5462]">✕</button></div></div>
                         )}
                     </div>
                     <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".json" onChange={handleRestoreFile} />
